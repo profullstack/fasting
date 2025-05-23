@@ -407,6 +407,8 @@ program
     } else {
       // OpenAI API key setup
       const currentKey = getOpenAIKey();
+      let apiKeyConfigured = !!currentKey;
+      
       if (currentKey) {
         console.log('✅ OpenAI API key is already configured.');
         const { reconfigure } = await prompts({
@@ -417,46 +419,102 @@ program
         });
         
         if (!reconfigure) {
-          console.log('Setup cancelled.');
-          return;
+          // Skip API key setup but continue to unit system setup
+          apiKeyConfigured = true;
+        } else {
+          apiKeyConfigured = false; // Will configure new API key
         }
       }
       
-      console.log('To use automatic calorie estimation, you need an OpenAI API key.');
-      console.log('Get one at: https://platform.openai.com/api-keys\n');
+      if (!apiKeyConfigured) {
+        console.log('To use automatic calorie estimation, you need an OpenAI API key.');
+        console.log('Get one at: https://platform.openai.com/api-keys\n');
+        
+        const { apiKey } = await prompts({
+          type: 'password',
+          name: 'apiKey',
+          message: 'Enter your OpenAI API key:',
+          validate: value => value.length > 0 ? true : 'API key cannot be empty'
+        });
+        
+        if (!apiKey) {
+          console.log('Setup cancelled.');
+          return;
+        }
+        
+        try {
+          setOpenAIKey(apiKey);
+          console.log(`\n✅ API key saved to: ${getConfigPath()}`);
+          console.log('🎉 OpenAI API key setup complete!');
+        } catch (error) {
+          console.error('❌ Error saving API key:', error.message);
+          process.exit(1);
+        }
+      }
       
-      const { apiKey } = await prompts({
-        type: 'password',
-        name: 'apiKey',
-        message: 'Enter your OpenAI API key:',
-        validate: value => value.length > 0 ? true : 'API key cannot be empty'
+      // Now prompt for unit system configuration (for both new and existing API key users)
+      console.log('\n📏 Unit System Configuration\n');
+      
+      const currentSystem = getUnitSystem();
+      const currentWeightUnit = getWeightUnit();
+      console.log(`Current unit system: ${currentSystem}`);
+      console.log(`Current weight unit: ${currentWeightUnit}`);
+      
+      const { configureUnits } = await prompts({
+        type: 'confirm',
+        name: 'configureUnits',
+        message: 'Would you like to configure your unit system preference?',
+        initial: true
       });
       
-      if (!apiKey) {
-        console.log('Setup cancelled.');
-        return;
+      if (configureUnits) {
+        const { newSystem } = await prompts({
+          type: 'select',
+          name: 'newSystem',
+          message: 'Choose your preferred unit system:',
+          choices: [
+            { title: 'Imperial (lbs, oz, fl oz, cups) - US Standard', value: 'imperial' },
+            { title: 'Metric (kg, g, ml, l) - International Standard', value: 'metric' }
+          ],
+          initial: currentSystem === 'metric' ? 1 : 0
+        });
+        
+        if (newSystem) {
+          setUnitSystem(newSystem);
+          console.log(`✅ Unit system set to: ${newSystem}`);
+          console.log(`✅ Weight unit automatically set to: ${newSystem === 'metric' ? 'kg' : 'lbs'}`);
+          
+          console.log('\n💡 Examples:');
+          if (newSystem === 'imperial') {
+            console.log('  Weight: fasting weight 305.8lbs');
+            console.log('  Meals:  fasting meal "Chicken breast" --size "6oz"');
+            console.log('  Drinks: fasting drink "Orange juice" --size "16oz"');
+          } else {
+            console.log('  Weight: fasting weight 138.5kg');
+            console.log('  Meals:  fasting meal "Chicken breast" --size "150g"');
+            console.log('  Drinks: fasting drink "Orange juice" --size "500ml"');
+          }
+        }
       }
       
-      try {
-        setOpenAIKey(apiKey);
-        console.log(`\n✅ API key saved to: ${getConfigPath()}`);
-        console.log('🎉 Setup complete! You can now use automatic calorie estimation.');
-        console.log('\nTry it out:');
+      console.log('\n🎉 Setup complete! You can now use automatic calorie estimation.');
+      console.log('\nTry it out:');
+      const finalSystem = getUnitSystem();
+      if (finalSystem === 'imperial') {
         console.log('  fasting meal "Grilled chicken" --size "6oz"');
         console.log('  fasting drink "Orange juice" --size "16oz"');
-        console.log('  fasting exercise "Running" 30');
-        
-        const currentMode = getStorageMode();
-        console.log(`\n📊 Current storage mode: ${currentMode}`);
-        console.log('\nTo configure other settings:');
-        console.log('  fasting setup --units     # Configure unit system (imperial/metric)');
-        console.log('  fasting setup --local     # Use local files');
-        console.log('  fasting setup --supabase  # Use Supabase cloud storage');
-        
-      } catch (error) {
-        console.error('❌ Error saving API key:', error.message);
-        process.exit(1);
+      } else {
+        console.log('  fasting meal "Grilled chicken" --size "150g"');
+        console.log('  fasting drink "Orange juice" --size "500ml"');
       }
+      console.log('  fasting exercise "Running" 30');
+      
+      const currentMode = getStorageMode();
+      console.log(`\n📊 Current storage mode: ${currentMode}`);
+      console.log('\nTo configure other settings:');
+      console.log('  fasting setup --units     # Configure unit system (imperial/metric)');
+      console.log('  fasting setup --local     # Use local files');
+      console.log('  fasting setup --supabase  # Use Supabase cloud storage');
     }
   });
 
