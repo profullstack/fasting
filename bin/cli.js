@@ -2,10 +2,12 @@
 
 import { Command } from 'commander';
 import prompts from 'prompts';
-import { logMeal, logDrink, getTodaysEntries, getCalorieHistory, logWeight, getWeightHistory, startFast, endFast, getCurrentFast, getFastHistory, getFastStats, logExercise, getTodaysExercises, getExerciseHistory } from '../lib/index.js';
+import { logMeal, logDrink, getTodaysEntries, getCalorieHistory, getWeightHistory, startFast, endFast, getCurrentFast, getFastHistory, getFastStats, logExercise, getTodaysExercises, getExerciseHistory } from '../lib/index.js';
+import { logWeight } from '../lib/weight.js';
 import { estimateCalories } from '../lib/calorie-estimator.js';
 import { estimateExerciseCalories } from '../lib/exercise-estimator.js';
-import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir, setSupabaseConfig, getSupabaseConfig, setStorageMode, getStorageMode, isSupabaseConfigured } from '../lib/config.js';
+import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir, setSupabaseConfig, getSupabaseConfig, setStorageMode, getStorageMode, isSupabaseConfigured, getWeightUnit, setWeightUnit, getUnitSystem, setUnitSystem } from '../lib/config.js';
+import { getSizeExamples } from '../lib/units.js';
 import { createWeightChart, createFastChart, createCalorieChart, createExerciseChart, createSummaryTable } from '../lib/charts.js';
 import { initializeSupabaseTables, testSupabaseConnection } from '../lib/supabase.js';
 
@@ -24,8 +26,17 @@ program
     } else {
       const sizeText = size ? ` (${size})` : '';
       console.log(`Estimating calories for: ${description}${sizeText}...`);
-      finalCalories = await estimateCalories(description, 'meal', size);
-      console.log(`Estimated calories: ${finalCalories}`);
+      try {
+        finalCalories = await estimateCalories(description, 'meal', size);
+        console.log(`Estimated calories: ${finalCalories}`);
+      } catch (error) {
+        console.error(`❌ ${error.message}`);
+        const unitSystem = getUnitSystem();
+        const examples = getSizeExamples('weight');
+        console.log('\n💡 Size examples for your unit system:');
+        examples.forEach(example => console.log(`  --size "${example}"`));
+        process.exit(1);
+      }
     }
     
     const sizeInfo = size ? ` (${size})` : '';
@@ -46,8 +57,17 @@ program
     } else {
       const sizeText = size ? ` (${size})` : '';
       console.log(`Estimating calories for: ${description}${sizeText}...`);
-      finalCalories = await estimateCalories(description, 'drink', size);
-      console.log(`Estimated calories: ${finalCalories}`);
+      try {
+        finalCalories = await estimateCalories(description, 'drink', size);
+        console.log(`Estimated calories: ${finalCalories}`);
+      } catch (error) {
+        console.error(`❌ ${error.message}`);
+        const unitSystem = getUnitSystem();
+        const examples = getSizeExamples('volume');
+        console.log('\n💡 Size examples for your unit system:');
+        examples.forEach(example => console.log(`  --size "${example}"`));
+        process.exit(1);
+      }
     }
     
     const sizeInfo = size ? ` (${size})` : '';
@@ -57,9 +77,23 @@ program
 
 program
   .command('weight <value>')
+  .description('Log your weight with optional units (e.g., "305.8lbs", "138.5kg", "305.8")')
   .action(async (value) => {
-    await logWeight(Number(value));
-    console.log(`Weight logged: ${value} lbs`);
+    try {
+      const result = await logWeight(value);
+      console.log(`Weight logged: ${result.stored}`);
+      if (result.original !== result.stored) {
+        console.log(`(converted from ${result.original})`);
+      }
+    } catch (error) {
+      console.error(`❌ ${error.message}`);
+      console.log('\n💡 Examples:');
+      console.log('  fasting weight 305.8lbs');
+      console.log('  fasting weight 138.5kg');
+      console.log('  fasting weight 305.8    # Uses your preferred unit');
+      console.log('  fasting weight 12oz');
+      process.exit(1);
+    }
   });
 
 program
@@ -217,8 +251,10 @@ program
   .command('setup')
   .option('--supabase', 'Configure Supabase cloud storage instead of local files')
   .option('--local', 'Switch to local file storage')
-  .description('Configure OpenAI API key and optionally Supabase cloud storage')
-  .action(async ({ supabase, local }) => {
+  .option('--weight-unit', 'Configure weight unit preference (lbs or kg)')
+  .option('--units', 'Configure unit system preference (imperial or metric)')
+  .description('Configure OpenAI API key, unit systems, and optionally Supabase cloud storage')
+  .action(async ({ supabase, local, weightUnit, units }) => {
     console.log('🔧 Fasting App Setup\n');
     
     if (local) {
@@ -228,8 +264,86 @@ program
       return;
     }
     
+    if (units) {
+      console.log('📏 Unit System Configuration\n');
+      
+      const currentSystem = getUnitSystem();
+      const currentWeightUnit = getWeightUnit();
+      console.log(`Current unit system: ${currentSystem}`);
+      console.log(`Current weight unit: ${currentWeightUnit}`);
+      
+      const { newSystem } = await prompts({
+        type: 'select',
+        name: 'newSystem',
+        message: 'Choose your preferred unit system:',
+        choices: [
+          { title: 'Imperial (lbs, oz, fl oz, cups) - US Standard', value: 'imperial' },
+          { title: 'Metric (kg, g, ml, l) - International Standard', value: 'metric' }
+        ],
+        initial: currentSystem === 'metric' ? 1 : 0
+      });
+      
+      if (!newSystem) {
+        console.log('Setup cancelled.');
+        return;
+      }
+      
+      setUnitSystem(newSystem);
+      console.log(`✅ Unit system set to: ${newSystem}`);
+      console.log(`✅ Weight unit automatically set to: ${newSystem === 'metric' ? 'kg' : 'lbs'}`);
+      
+      console.log('\n💡 Examples:');
+      if (newSystem === 'imperial') {
+        console.log('  Weight: fasting weight 305.8lbs');
+        console.log('  Meals:  fasting meal "Chicken breast" --size "6oz"');
+        console.log('  Drinks: fasting drink "Orange juice" --size "16oz"');
+      } else {
+        console.log('  Weight: fasting weight 138.5kg');
+        console.log('  Meals:  fasting meal "Chicken breast" --size "150g"');
+        console.log('  Drinks: fasting drink "Orange juice" --size "500ml"');
+      }
+      return;
+    }
+    
+    if (weightUnit) {
+      console.log('⚖️  Weight Unit Configuration\n');
+      
+      const currentUnit = getWeightUnit();
+      console.log(`Current weight unit: ${currentUnit}`);
+      
+      const { newUnit } = await prompts({
+        type: 'select',
+        name: 'newUnit',
+        message: 'Choose your preferred weight unit:',
+        choices: [
+          { title: 'Pounds (lbs) - Imperial', value: 'lbs' },
+          { title: 'Kilograms (kg) - Metric', value: 'kg' }
+        ],
+        initial: currentUnit === 'kg' ? 1 : 0
+      });
+      
+      if (!newUnit) {
+        console.log('Setup cancelled.');
+        return;
+      }
+      
+      setWeightUnit(newUnit);
+      console.log(`✅ Weight unit set to: ${newUnit}`);
+      console.log('\n💡 Examples:');
+      if (newUnit === 'lbs') {
+        console.log('  fasting weight 305.8lbs');
+        console.log('  fasting weight 305.8     # Will use lbs');
+        console.log('  fasting weight 138.5kg   # Will convert to lbs');
+      } else {
+        console.log('  fasting weight 138.5kg');
+        console.log('  fasting weight 138.5     # Will use kg');
+        console.log('  fasting weight 305.8lbs  # Will convert to kg');
+      }
+      return;
+    }
+    
     if (supabase) {
-      console.log('📊 Supabase Cloud Storage Setup');
+      console.log('� Supabase Cloud Storage Setup');
       console.log('This will configure cloud storage for your fasting data.\n');
       
       const currentConfig = getSupabaseConfig();
@@ -334,7 +448,8 @@ program
         
         const currentMode = getStorageMode();
         console.log(`\n📊 Current storage mode: ${currentMode}`);
-        console.log('\nTo switch storage modes:');
+        console.log('\nTo configure other settings:');
+        console.log('  fasting setup --units     # Configure unit system (imperial/metric)');
         console.log('  fasting setup --local     # Use local files');
         console.log('  fasting setup --supabase  # Use Supabase cloud storage');
         

@@ -12,7 +12,9 @@ const testFiles = [
   'fasting.test.js',
   'weight.test.js',
   'calorie-chart.test.js',
-  'exercise.test.js'
+  'exercise.test.js',
+  'units.test.js',
+  'config-units.test.js'
 ];
 
 console.log('🧪 Running Fasting App Tests\n');
