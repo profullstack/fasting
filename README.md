@@ -18,6 +18,10 @@ A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal t
 1. Install dependencies:
 ```bash
 pnpm install
+```
+
+2. Link for global CLI access (optional):
+```bash
 pnpm link --global
 ```
 
@@ -29,6 +33,25 @@ fasting setup
 The setup command will prompt you for your OpenAI API key and save it securely to `~/.config/fasting/config.json`.
 
 **Alternative**: You can also set the `OPENAI_API_KEY` environment variable if you prefer.
+
+## Local Development
+
+To run the CLI locally during development:
+
+```bash
+# Option 1: Direct execution
+node bin/cli.js summary
+node bin/cli.js fast start
+node bin/cli.js meal "Chicken salad" --calories 350
+
+# Option 2: After linking globally
+pnpm link --global
+fasting summary
+fasting fast start
+
+# Option 3: Using pnpm exec
+pnpm exec fasting summary
+```
 
 ## Usage
 
@@ -278,3 +301,34 @@ pnpm example:api
 **Example Files:**
 - [`examples/basic-usage.js`](examples/basic-usage.js) - Demonstrates CLI commands and workflow
 - [`examples/api-usage.js`](examples/api-usage.js) - Shows programmatic Node.js module usage
+
+## Publishing
+
+### Version Bumping
+
+```bash
+# Patch version (bug fixes): 1.0.2 -> 1.0.3
+pnpm version patch
+
+# Minor version (new features): 1.0.2 -> 1.1.0
+pnpm version minor
+
+# Major version (breaking changes): 1.0.2 -> 2.0.0
+pnpm version major
+
+# Specific version
+pnpm version 1.2.3
+```
+
+### Publishing to NPM
+
+```bash
+# Complete workflow
+pnpm test                    # Run tests first
+pnpm version patch           # Bump version
+pnpm publish --access public # Publish to npm
+git push && git push --tags  # Push to git
+
+# Dry run to see what would be published
+pnpm publish --dry-run
+```
