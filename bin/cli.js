@@ -99,22 +99,59 @@ program
 program
   .command('exercise <description> <duration>')
   .option('-c, --calories <number>', 'Override automatic calorie burn estimation with manual value')
-  .description('Log exercise with duration in minutes')
+  .description('Log exercise with duration (e.g., "30", "30 minutes", "1.5 hours")')
   .action(async (description, duration, { calories }) => {
-    const durationNum = Number(duration);
+    // Parse duration - handle minutes, hours, and plain numbers
+    let durationInMinutes;
+    if (typeof duration === 'string') {
+      // Extract number and unit from strings like "30 minutes", "1.5 hours", "45min", "2h", etc.
+      const match = duration.match(/(\d+(?:\.\d+)?)\s*(minutes?|mins?|hours?|hrs?|h|m)?/i);
+      if (match) {
+        const value = Number(match[1]);
+        const unit = match[2] ? match[2].toLowerCase() : 'minutes'; // Default to minutes
+        
+        // Convert to minutes
+        if (unit.startsWith('h')) { // hours, hour, hrs, hr, h
+          durationInMinutes = value * 60;
+        } else { // minutes, minute, mins, min, m, or no unit
+          durationInMinutes = value;
+        }
+      } else {
+        console.error(`❌ Invalid duration format: "${duration}". Please use formats like "30", "30 minutes", "1.5 hours"`);
+        process.exit(1);
+      }
+    } else {
+      durationInMinutes = Number(duration);
+    }
+    
+    if (isNaN(durationInMinutes) || durationInMinutes <= 0) {
+      console.error(`❌ Invalid duration: "${duration}". Please provide a positive number.`);
+      process.exit(1);
+    }
+    
+    // Round to reasonable precision
+    durationInMinutes = Math.round(durationInMinutes * 10) / 10;
+    
     let finalCalories = null;
     
     if (calories) {
       finalCalories = Number(calories);
       console.log(`Using manual calorie burn count: ${finalCalories}`);
     } else {
-      console.log(`Estimating calories burned for: ${description} (${durationNum} minutes)...`);
-      finalCalories = await estimateExerciseCalories(description, durationNum);
-      console.log(`Estimated calories burned: ${finalCalories}`);
+      console.log(`Estimating calories burned for: ${description} (${durationInMinutes} minutes)...`);
+      try {
+        finalCalories = await estimateExerciseCalories(description, durationInMinutes);
+        console.log(`Estimated calories burned: ${finalCalories}`);
+      } catch (error) {
+        console.error(`❌ Error estimating calories: ${error.message}`);
+        console.log('Using fallback estimate...');
+        finalCalories = Math.round(durationInMinutes * 5); // 5 calories per minute fallback
+        console.log(`Estimated calories burned: ${finalCalories}`);
+      }
     }
     
-    await logExercise(description, durationNum, finalCalories);
-    console.log(`Exercise logged: ${description} (${durationNum} min, ${finalCalories} calories burned)`);
+    await logExercise(description, durationInMinutes, finalCalories);
+    console.log(`Exercise logged: ${description} (${durationInMinutes} min, ${finalCalories} calories burned)`);
   });
 
 program

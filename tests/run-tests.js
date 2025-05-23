@@ -14,7 +14,8 @@ const testFiles = [
   'calorie-chart.test.js',
   'exercise.test.js',
   'units.test.js',
-  'config-units.test.js'
+  'config-units.test.js',
+  'exercise-duration.test.js'
 ];
 
 console.log('🧪 Running Fasting App Tests\n');
