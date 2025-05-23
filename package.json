@@ -1,6 +1,6 @@
 {
   "name": "@profullstack/fasting",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal tracking, weight monitoring, and fast history with visual charts",
   "type": "module",
   "main": "lib/index.js",
