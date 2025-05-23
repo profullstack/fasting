@@ -1,0 +1,63 @@
+{
+  "name": "@profullstack/fasting",
+  "version": "1.0.0",
+  "description": "A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal tracking, weight monitoring, and fast history with visual charts",
+  "type": "module",
+  "main": "lib/index.js",
+  "files": [
+    "lib",
+    "bin",
+    "examples",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/profullstack/fasting.git"
+  },
+  "bugs": {
+    "url": "https://github.com/profullstack/fasting/issues"
+  },
+  "homepage": "https://profullstack.com",
+  "bin": {
+    "fasting": "./bin/cli.js"
+  },
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "test:fast": "node --test tests/fast.test.js",
+    "test:charts": "node --test tests/charts.test.js",
+    "test:fasting": "node --test tests/fasting.test.js",
+    "test:weight": "node --test tests/weight.test.js",
+    "example": "node examples/basic-usage.js",
+    "example:api": "node examples/api-usage.js",
+    "cli": "./bin/cli.js"
+  },
+  "keywords": [
+    "fasting",
+    "intermittent-fasting",
+    "16-8",
+    "meal-tracking",
+    "weight-tracking",
+    "calorie-estimation",
+    "health",
+    "fitness",
+    "nutrition",
+    "cli",
+    "charts",
+    "openai",
+    "gpt",
+    "ascii-charts",
+    "dashboard"
+  ],
+  "author": "Profullstack, Inc.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.6.5",
+  "dependencies": {
+    "asciichart": "^1.5.25",
+    "commander": "^12.0.0",
+    "openai": "^4.103.0",
+    "prompts": "^2.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
