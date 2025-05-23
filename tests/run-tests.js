@@ -8,9 +8,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const testFiles = [
   'fast.test.js',
-  'charts.test.js', 
+  'charts.test.js',
   'fasting.test.js',
-  'weight.test.js'
+  'weight.test.js',
+  'calorie-chart.test.js',
+  'exercise.test.js'
 ];
 
 console.log('🧪 Running Fasting App Tests\n');

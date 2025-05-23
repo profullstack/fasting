@@ -2,10 +2,11 @@
 
 import { Command } from 'commander';
 import prompts from 'prompts';
-import { logMeal, logDrink, getTodaysEntries, logWeight, getWeightHistory, startFast, endFast, getCurrentFast, getFastHistory, getFastStats } from '../lib/index.js';
+import { logMeal, logDrink, getTodaysEntries, getCalorieHistory, logWeight, getWeightHistory, startFast, endFast, getCurrentFast, getFastHistory, getFastStats, logExercise, getTodaysExercises, getExerciseHistory } from '../lib/index.js';
 import { estimateCalories } from '../lib/calorie-estimator.js';
+import { estimateExerciseCalories } from '../lib/exercise-estimator.js';
 import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir } from '../lib/config.js';
-import { createWeightChart, createFastChart, createSummaryTable } from '../lib/charts.js';
+import { createWeightChart, createFastChart, createCalorieChart, createExerciseChart, createSummaryTable } from '../lib/charts.js';
 
 const program = new Command();
 
@@ -58,6 +59,27 @@ program
   .action((value) => {
     logWeight(Number(value));
     console.log(`Weight logged: ${value} lbs`);
+  });
+
+program
+  .command('exercise <description> <duration>')
+  .option('-c, --calories <number>', 'Override automatic calorie burn estimation with manual value')
+  .description('Log exercise with duration in minutes')
+  .action(async (description, duration, { calories }) => {
+    const durationNum = Number(duration);
+    let finalCalories = null;
+    
+    if (calories) {
+      finalCalories = Number(calories);
+      console.log(`Using manual calorie burn count: ${finalCalories}`);
+    } else {
+      console.log(`Estimating calories burned for: ${description} (${durationNum} minutes)...`);
+      finalCalories = await estimateExerciseCalories(description, durationNum);
+      console.log(`Estimated calories burned: ${finalCalories}`);
+    }
+    
+    logExercise(description, durationNum, finalCalories);
+    console.log(`Exercise logged: ${description} (${durationNum} min, ${finalCalories} calories burned)`);
   });
 
 program
@@ -120,10 +142,15 @@ program
   .command('summary')
   .option('--weight-chart', 'Show weight chart')
   .option('--fast-chart', 'Show fast duration chart')
+  .option('--calorie-chart', 'Show daily calorie chart')
+  .option('--exercise-chart', 'Show daily exercise calories burned chart')
   .description('Show comprehensive summary with charts')
-  .action(({ weightChart, fastChart }) => {
+  .action(({ weightChart, fastChart, calorieChart, exerciseChart }) => {
     const todaysEntries = getTodaysEntries();
+    const todaysExercises = getTodaysExercises();
     const recentWeights = getWeightHistory();
+    const calorieHistory = getCalorieHistory();
+    const exerciseHistory = getExerciseHistory();
     const fastStats = getFastStats();
     const currentFast = getCurrentFast();
     const recentFasts = getFastHistory();
@@ -131,6 +158,7 @@ program
     // Show main summary
     const summaryData = {
       todaysEntries,
+      todaysExercises,
       recentWeights,
       fastStats,
       currentFast,
@@ -150,8 +178,18 @@ program
       console.log(createFastChart(recentFasts));
     }
 
+    if (calorieChart && calorieHistory.length > 0) {
+      console.log('\n');
+      console.log(createCalorieChart(calorieHistory));
+    }
+
+    if (exerciseChart && exerciseHistory.length > 0) {
+      console.log('\n');
+      console.log(createExerciseChart(exerciseHistory));
+    }
+
     // Show charts automatically if no specific chart requested and data exists
-    if (!weightChart && !fastChart) {
+    if (!weightChart && !fastChart && !calorieChart && !exerciseChart) {
       if (recentWeights.length > 1) {
         console.log('\n');
         console.log(createWeightChart(recentWeights));
@@ -160,6 +198,16 @@ program
       if (recentFasts.length > 0) {
         console.log('\n');
         console.log(createFastChart(recentFasts));
+      }
+
+      if (calorieHistory.length > 1) {
+        console.log('\n');
+        console.log(createCalorieChart(calorieHistory));
+      }
+
+      if (exerciseHistory.length > 1) {
+        console.log('\n');
+        console.log(createExerciseChart(exerciseHistory));
       }
     }
   });
@@ -216,7 +264,7 @@ program
 
 program
   .command('clean')
-  .description('Delete all stored data (meals, weight, fasts)')
+  .description('Delete all stored data (meals, weight, fasts, exercises)')
   .option('--config', 'Also delete configuration (API key)')
   .action(async ({ config }) => {
     console.log('🗑️  Clean Data\n');
@@ -224,7 +272,7 @@ program
     if (config) {
       console.log('⚠️  This will delete ALL data including your API key configuration.');
     } else {
-      console.log('⚠️  This will delete all meals, weight, and fast data.');
+      console.log('⚠️  This will delete all meals, weight, fast, and exercise data.');
       console.log('Your API key configuration will be preserved.');
     }
     
@@ -248,7 +296,7 @@ program
         console.log(`📁 Data directory: ${getConfigDir()}`);
         console.log('\nTo start fresh, run: fasting setup');
       } else {
-        console.log('✅ Meals, weight, and fast data deleted.');
+        console.log('✅ Meals, weight, fast, and exercise data deleted.');
         console.log('Your API key configuration has been preserved.');
         console.log('\nYou can start logging new data immediately.');
       }

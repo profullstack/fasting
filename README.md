@@ -6,9 +6,11 @@ A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal t
 
 - **Fast tracking** - Start/end fasts with duration tracking and history
 - **Meal & drink logging** - Track consumption during eating windows
-- **Automatic calorie estimation** using OpenAI's GPT-4o model
+- **Exercise tracking** - Log workouts with automatic calorie burn estimation
+- **Automatic calorie estimation** using OpenAI's GPT-4o model for food and exercise
 - **Weight monitoring** - Log and visualize weight trends with ASCII charts
-- **Visual charts** - CLI bar charts for fast durations and line charts for weight
+- **Calorie tracking** - Daily calorie intake and burn visualization with line charts
+- **Visual charts** - CLI bar charts for fast durations and line charts for weight, calories, and exercise
 - **Comprehensive summary** - All-in-one dashboard with current status and history
 - **Flexible timing** - Specify custom start/end times for fasts and meals
 - Manual calorie override when needed
@@ -83,12 +85,25 @@ fasting drink "Orange juice" --size "32oz"
 fasting meal "Salad" -s "large"
 ```
 
+### Exercise Tracking
+```bash
+# Calories burned are automatically estimated using AI and your weight
+fasting exercise "Running" 30
+fasting exercise "Weight lifting" 45
+fasting exercise "Yoga" 60
+
+# Override automatic estimation with manual calories
+fasting exercise "Swimming" 30 --calories 400
+```
+
 ### Weight & Summary
 ```bash
 fasting weight 200
-fasting summary                    # Comprehensive dashboard with charts
-fasting summary --weight-chart     # Show only weight chart
-fasting summary --fast-chart       # Show only fast duration chart
+fasting summary                      # Comprehensive dashboard with charts
+fasting summary --weight-chart       # Show only weight chart
+fasting summary --fast-chart         # Show only fast duration chart
+fasting summary --calorie-chart      # Show only daily calorie chart
+fasting summary --exercise-chart     # Show only exercise calories burned chart
 ```
 
 ### Manual Calorie Override
@@ -107,12 +122,13 @@ fasting drink "Smoothie" --size "16oz" --calories 350
 - `fast <start|end>` - Start or end a fast with optional custom timing
 - `meal <description>` - Log a meal with automatic calorie estimation
 - `drink <description>` - Log a drink with automatic calorie estimation
+- `exercise <description> <duration>` - Log exercise with automatic calorie burn estimation
 - `weight <value>` - Log weight in pounds
 - `summary` - Show comprehensive dashboard with current status, charts, and history
 
 ### Setup & Management
 - `setup` - Configure OpenAI API key for automatic calorie estimation
-- `clean` - Delete all stored data (meals, weight, fasts)
+- `clean` - Delete all stored data (meals, weight, fasts, exercises)
 
 ### Command Options
 
@@ -125,9 +141,15 @@ fasting drink "Smoothie" --size "16oz" --calories 350
 - `-s, --size <size>` - Specify portion size for more accurate calorie estimation
   - Examples: "32oz", "large", "2 cups", "small", "16oz", "2 slices", "1 bowl"
 
+**Exercise Command:**
+- `-c, --calories <number>` - Override automatic calorie burn estimation with manual value
+- `<duration>` - Duration in minutes (required)
+
 **Summary Command:**
 - `--weight-chart` - Show only weight trend chart
 - `--fast-chart` - Show only fast duration chart
+- `--calorie-chart` - Show only daily calorie intake chart
+- `--exercise-chart` - Show only daily exercise calories burned chart
 
 **Clean Command:**
 - `--config` - Also delete API key configuration
@@ -152,10 +174,11 @@ fasting-app/
 ### User Data (stored in ~/.config/fasting/)
 ```
 ~/.config/fasting/
-├── config.json    # API key and settings
-├── meals.json     # Meal and drink logs
-├── weight.json    # Weight history
-└── fasts.json     # Fast tracking history
+├── config.json     # API key and settings
+├── meals.json      # Meal and drink logs
+├── weight.json     # Weight history
+├── fasts.json      # Fast tracking history
+└── exercises.json  # Exercise logs
 ```
 
 ## How It Works
@@ -180,7 +203,17 @@ Automatic calorie estimation using OpenAI's GPT-4o model:
 ### Visual Charts
 - **Weight trends** - ASCII line charts showing weight changes over time
 - **Fast durations** - Bar charts displaying recent fast lengths vs. 16h target
-- **Comprehensive summary** - All-in-one dashboard with current fast status, today's meals, statistics, and charts
+- **Daily calories** - Line charts showing calorie intake trends over time with averages
+- **Exercise calories** - Line charts showing daily calories burned through exercise
+- **Comprehensive summary** - All-in-one dashboard with current fast status, today's meals, exercises, statistics, and charts
+
+### Exercise Tracking
+The app estimates calories burned using OpenAI's GPT-4o model and your current weight:
+
+1. **Log exercise** - Provide exercise description and duration in minutes
+2. **AI estimation** - Uses your latest recorded weight and exercise details for accurate calorie burn calculation
+3. **Manual override** - Use `-c` flag to specify exact calories burned if needed
+4. **Daily tracking** - View total calories burned per day with trend analysis
 
 ### Size Examples
 - **Drinks**: "32oz", "16oz", "large", "small", "2 cups"
@@ -214,9 +247,10 @@ This package can also be used as a Node.js module in your own applications:
 
 ```javascript
 import {
-  logMeal, logDrink, getTodaysEntries,
+  logMeal, logDrink, getTodaysEntries, getCalorieHistory,
   logWeight, getWeightHistory,
-  startFast, endFast, getCurrentFast, getFastHistory, getFastStats
+  startFast, endFast, getCurrentFast, getFastHistory, getFastStats,
+  logExercise, getTodaysExercises, getExerciseHistory
 } from 'fasting-app';
 
 // Fast tracking
@@ -240,6 +274,14 @@ const weightHistory = getWeightHistory();
 // Fast history and statistics
 const fastHistory = getFastHistory(); // Completed fasts only
 const fastStats = getFastStats(); // Statistics summary
+
+// Calorie history
+const calorieHistory = getCalorieHistory(); // Daily calorie totals
+
+// Exercise tracking
+logExercise('Running', 30, 300); // description, duration (min), calories burned
+const todaysExercises = getTodaysExercises(); // Today's exercises
+const exerciseHistory = getExerciseHistory(); // Daily exercise calorie totals
 ```
 
 ### API Functions
@@ -255,8 +297,14 @@ const fastStats = getFastStats(); // Statistics summary
 - **`logMeal(description, calories)`** - Log a meal with description and calorie count
 - **`logDrink(description, calories)`** - Log a drink with description and calorie count
 - **`getTodaysEntries()`** - Get all meals and drinks logged today
+- **`getCalorieHistory()`** - Get daily calorie totals grouped by date
 - **`logWeight(weight)`** - Log weight in pounds
 - **`getWeightHistory()`** - Get complete weight history with timestamps
+
+**Exercise Tracking:**
+- **`logExercise(description, duration, caloriesBurned)`** - Log exercise with description, duration (minutes), and calories burned
+- **`getTodaysExercises()`** - Get all exercises logged today
+- **`getExerciseHistory()`** - Get daily exercise calorie totals grouped by date
 
 Note: When using the module API, you need to provide calorie counts manually. Automatic calorie estimation via OpenAI is only available through the CLI commands.
 
@@ -271,10 +319,12 @@ The project includes comprehensive unit tests for all functionality:
 pnpm test
 
 # Run specific test suites
-pnpm test:fast      # Fast tracking tests
-pnpm test:charts    # Chart generation tests
-pnpm test:fasting   # Meal/drink logging tests
-pnpm test:weight    # Weight tracking tests
+pnpm test:fast           # Fast tracking tests
+pnpm test:charts         # Chart generation tests
+pnpm test:fasting        # Meal/drink logging tests
+pnpm test:weight         # Weight tracking tests
+pnpm test:calorie-chart  # Calorie chart tests
+pnpm test:exercise       # Exercise tracking tests
 ```
 
 ### Test Coverage
@@ -283,6 +333,8 @@ pnpm test:weight    # Weight tracking tests
 - **Charts**: Weight line charts, fast bar charts, summary tables
 - **Meal/Drink Logging**: Entry creation, today's entries filtering
 - **Weight Tracking**: Weight logging, history retrieval, trend analysis
+- **Calorie Charts**: Daily calorie aggregation, chart generation, history tracking
+- **Exercise Tracking**: Exercise logging, calorie burn estimation, daily aggregation, chart generation
 
 All tests use isolated temporary directories to avoid interfering with real user data.
 
