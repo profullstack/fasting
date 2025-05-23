@@ -1,6 +1,6 @@
 {
   "name": "@profullstack/fasting",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal tracking, weight monitoring, and fast history with visual charts",
   "type": "module",
   "main": "lib/index.js",
@@ -31,7 +31,9 @@
     "test:exercise": "node --test tests/exercise.test.js",
     "example": "node examples/basic-usage.js",
     "example:api": "node examples/api-usage.js",
-    "cli": "./bin/cli.js"
+    "cli": "./bin/cli.js",
+    "prepare": "husky",
+    "pre-commit": "echo 'Running basic syntax check...' && node --check bin/cli.js && echo 'Syntax check passed!'"
   },
   "keywords": [
     "fasting",
@@ -57,7 +59,11 @@
     "asciichart": "^1.5.25",
     "commander": "^12.0.0",
     "openai": "^4.103.0",
-    "prompts": "^2.4.2"
+    "prompts": "^2.4.2",
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

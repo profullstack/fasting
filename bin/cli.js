@@ -5,8 +5,9 @@ import prompts from 'prompts';
 import { logMeal, logDrink, getTodaysEntries, getCalorieHistory, logWeight, getWeightHistory, startFast, endFast, getCurrentFast, getFastHistory, getFastStats, logExercise, getTodaysExercises, getExerciseHistory } from '../lib/index.js';
 import { estimateCalories } from '../lib/calorie-estimator.js';
 import { estimateExerciseCalories } from '../lib/exercise-estimator.js';
-import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir } from '../lib/config.js';
+import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir, setSupabaseConfig, getSupabaseConfig, setStorageMode, getStorageMode, isSupabaseConfigured } from '../lib/config.js';
 import { createWeightChart, createFastChart, createCalorieChart, createExerciseChart, createSummaryTable } from '../lib/charts.js';
+import { initializeSupabaseTables, testSupabaseConnection } from '../lib/supabase.js';
 
 const program = new Command();
 
@@ -28,7 +29,7 @@ program
     }
     
     const sizeInfo = size ? ` (${size})` : '';
-    logMeal(description, finalCalories);
+    await logMeal(description, finalCalories);
     console.log(`Meal logged: ${description}${sizeInfo} (${finalCalories} calories)`);
   });
 
@@ -50,14 +51,14 @@ program
     }
     
     const sizeInfo = size ? ` (${size})` : '';
-    logDrink(description, finalCalories);
+    await logDrink(description, finalCalories);
     console.log(`Drink logged: ${description}${sizeInfo} (${finalCalories} calories)`);
   });
 
 program
   .command('weight <value>')
-  .action((value) => {
-    logWeight(Number(value));
+  .action(async (value) => {
+    await logWeight(Number(value));
     console.log(`Weight logged: ${value} lbs`);
   });
 
@@ -78,7 +79,7 @@ program
       console.log(`Estimated calories burned: ${finalCalories}`);
     }
     
-    logExercise(description, durationNum, finalCalories);
+    await logExercise(description, durationNum, finalCalories);
     console.log(`Exercise logged: ${description} (${durationNum} min, ${finalCalories} calories burned)`);
   });
 
@@ -101,7 +102,7 @@ program
           }
         }
         
-        const timestamp = startFast(startTime);
+        const timestamp = await startFast(startTime);
         const displayTime = new Date(timestamp).toLocaleString();
         console.log(`✅ Fast started at ${displayTime}`);
         console.log('💡 Use "fasting fast end" to complete your fast');
@@ -117,7 +118,7 @@ program
           }
         }
         
-        const completedFast = endFast(endTime);
+        const completedFast = await endFast(endTime);
         const displayTime = new Date(completedFast.endTime).toLocaleString();
         console.log(`✅ Fast completed at ${displayTime}`);
         console.log(`⏱️  Duration: ${completedFast.durationHours} hours`);
@@ -145,15 +146,15 @@ program
   .option('--calorie-chart', 'Show daily calorie chart')
   .option('--exercise-chart', 'Show daily exercise calories burned chart')
   .description('Show comprehensive summary with charts')
-  .action(({ weightChart, fastChart, calorieChart, exerciseChart }) => {
-    const todaysEntries = getTodaysEntries();
-    const todaysExercises = getTodaysExercises();
-    const recentWeights = getWeightHistory();
-    const calorieHistory = getCalorieHistory();
-    const exerciseHistory = getExerciseHistory();
-    const fastStats = getFastStats();
-    const currentFast = getCurrentFast();
-    const recentFasts = getFastHistory();
+  .action(async ({ weightChart, fastChart, calorieChart, exerciseChart }) => {
+    const todaysEntries = await getTodaysEntries();
+    const todaysExercises = await getTodaysExercises();
+    const recentWeights = await getWeightHistory();
+    const calorieHistory = await getCalorieHistory();
+    const exerciseHistory = await getExerciseHistory();
+    const fastStats = await getFastStats();
+    const currentFast = await getCurrentFast();
+    const recentFasts = await getFastHistory();
 
     // Show main summary
     const summaryData = {
@@ -214,51 +215,133 @@ program
 
 program
   .command('setup')
-  .description('Configure OpenAI API key for automatic calorie estimation')
-  .action(async () => {
+  .option('--supabase', 'Configure Supabase cloud storage instead of local files')
+  .option('--local', 'Switch to local file storage')
+  .description('Configure OpenAI API key and optionally Supabase cloud storage')
+  .action(async ({ supabase, local }) => {
     console.log('🔧 Fasting App Setup\n');
     
-    const currentKey = getOpenAIKey();
-    if (currentKey) {
-      console.log('✅ OpenAI API key is already configured.');
-      const { reconfigure } = await prompts({
-        type: 'confirm',
-        name: 'reconfigure',
-        message: 'Do you want to update your API key?',
-        initial: false
-      });
-      
-      if (!reconfigure) {
-        console.log('Setup cancelled.');
-        return;
-      }
-    }
-    
-    console.log('To use automatic calorie estimation, you need an OpenAI API key.');
-    console.log('Get one at: https://platform.openai.com/api-keys\n');
-    
-    const { apiKey } = await prompts({
-      type: 'password',
-      name: 'apiKey',
-      message: 'Enter your OpenAI API key:',
-      validate: value => value.length > 0 ? true : 'API key cannot be empty'
-    });
-    
-    if (!apiKey) {
-      console.log('Setup cancelled.');
+    if (local) {
+      setStorageMode('local');
+      console.log('✅ Switched to local file storage.');
+      console.log(`📁 Data will be stored in: ${getConfigDir()}`);
       return;
     }
     
-    try {
-      setOpenAIKey(apiKey);
-      console.log(`\n✅ API key saved to: ${getConfigPath()}`);
-      console.log('🎉 Setup complete! You can now use automatic calorie estimation.');
-      console.log('\nTry it out:');
-      console.log('  fasting meal "Grilled chicken" --size "6oz"');
-      console.log('  fasting drink "Orange juice" --size "16oz"');
-    } catch (error) {
-      console.error('❌ Error saving API key:', error.message);
-      process.exit(1);
+    if (supabase) {
+      console.log('📊 Supabase Cloud Storage Setup');
+      console.log('This will configure cloud storage for your fasting data.\n');
+      
+      const currentConfig = getSupabaseConfig();
+      if (isSupabaseConfigured()) {
+        console.log('✅ Supabase is already configured.');
+        const { reconfigure } = await prompts({
+          type: 'confirm',
+          name: 'reconfigure',
+          message: 'Do you want to update your Supabase configuration?',
+          initial: false
+        });
+        
+        if (!reconfigure) {
+          console.log('Setup cancelled.');
+          return;
+        }
+      }
+      
+      console.log('You need a Supabase project with the following configuration:');
+      console.log('Get these values from: https://supabase.com/dashboard\n');
+      
+      const supabaseConfig = await prompts([
+        {
+          type: 'text',
+          name: 'url',
+          message: 'Supabase URL:',
+          initial: currentConfig.url || '',
+          validate: value => value.length > 0 ? true : 'URL cannot be empty'
+        },
+        {
+          type: 'password',
+          name: 'serviceRoleKey',
+          message: 'Supabase Service Role Key:',
+          initial: currentConfig.serviceRoleKey || '',
+          validate: value => value.length > 0 ? true : 'Service role key cannot be empty'
+        }
+      ]);
+      
+      if (!supabaseConfig.url || !supabaseConfig.serviceRoleKey) {
+        console.log('Setup cancelled.');
+        return;
+      }
+      
+      try {
+        console.log('\n🔄 Testing Supabase connection...');
+        setSupabaseConfig(supabaseConfig);
+        
+        console.log('\n🗄️  Initializing database tables...');
+        await initializeSupabaseTables();
+        console.log('✅ Database tables initialized!');
+        
+        setStorageMode('supabase');
+        console.log(`\n✅ Supabase configuration saved to: ${getConfigPath()}`);
+        console.log('🎉 Cloud storage setup complete!');
+        console.log('\n💡 Your data will now be stored in Supabase cloud storage.');
+        
+      } catch (error) {
+        console.error('❌ Error setting up Supabase:', error.message);
+        process.exit(1);
+      }
+    } else {
+      // OpenAI API key setup
+      const currentKey = getOpenAIKey();
+      if (currentKey) {
+        console.log('✅ OpenAI API key is already configured.');
+        const { reconfigure } = await prompts({
+          type: 'confirm',
+          name: 'reconfigure',
+          message: 'Do you want to update your API key?',
+          initial: false
+        });
+        
+        if (!reconfigure) {
+          console.log('Setup cancelled.');
+          return;
+        }
+      }
+      
+      console.log('To use automatic calorie estimation, you need an OpenAI API key.');
+      console.log('Get one at: https://platform.openai.com/api-keys\n');
+      
+      const { apiKey } = await prompts({
+        type: 'password',
+        name: 'apiKey',
+        message: 'Enter your OpenAI API key:',
+        validate: value => value.length > 0 ? true : 'API key cannot be empty'
+      });
+      
+      if (!apiKey) {
+        console.log('Setup cancelled.');
+        return;
+      }
+      
+      try {
+        setOpenAIKey(apiKey);
+        console.log(`\n✅ API key saved to: ${getConfigPath()}`);
+        console.log('🎉 Setup complete! You can now use automatic calorie estimation.');
+        console.log('\nTry it out:');
+        console.log('  fasting meal "Grilled chicken" --size "6oz"');
+        console.log('  fasting drink "Orange juice" --size "16oz"');
+        console.log('  fasting exercise "Running" 30');
+        
+        const currentMode = getStorageMode();
+        console.log(`\n📊 Current storage mode: ${currentMode}`);
+        console.log('\nTo switch storage modes:');
+        console.log('  fasting setup --local     # Use local files');
+        console.log('  fasting setup --supabase  # Use Supabase cloud storage');
+        
+      } catch (error) {
+        console.error('❌ Error saving API key:', error.message);
+        process.exit(1);
+      }
     }
   });
 
@@ -289,9 +372,11 @@ program
     }
     
     try {
-      cleanData(!config); // keepConfig = !config
+      const { clearAllData } = await import('../lib/storage.js');
+      await clearAllData();
       
       if (config) {
+        cleanData(false); // Also clean config
         console.log('✅ All data and configuration deleted.');
         console.log(`📁 Data directory: ${getConfigDir()}`);
         console.log('\nTo start fresh, run: fasting setup');

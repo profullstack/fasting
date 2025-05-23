@@ -10,6 +10,7 @@ A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal t
 - **Automatic calorie estimation** using OpenAI's GPT-4o model for food and exercise
 - **Weight monitoring** - Log and visualize weight trends with ASCII charts
 - **Calorie tracking** - Daily calorie intake and burn visualization with line charts
+- **Cloud storage** - Optional Supabase integration for cloud data storage and sync
 - **Visual charts** - CLI bar charts for fast durations and line charts for weight, calories, and exercise
 - **Comprehensive summary** - All-in-one dashboard with current status and history
 - **Flexible timing** - Specify custom start/end times for fasts and meals
@@ -35,6 +36,13 @@ fasting setup
 The setup command will prompt you for your OpenAI API key and save it securely to `~/.config/fasting/config.json`.
 
 **Alternative**: You can also set the `OPENAI_API_KEY` environment variable if you prefer.
+
+3. Optional: Configure Supabase cloud storage:
+```bash
+fasting setup --supabase
+```
+
+This will prompt you for your Supabase configuration and enable cloud storage for your data.
 
 ## Local Development
 
@@ -128,6 +136,8 @@ fasting drink "Smoothie" --size "16oz" --calories 350
 
 ### Setup & Management
 - `setup` - Configure OpenAI API key for automatic calorie estimation
+- `setup --supabase` - Configure Supabase cloud storage
+- `setup --local` - Switch to local file storage
 - `clean` - Delete all stored data (meals, weight, fasts, exercises)
 
 ### Command Options
@@ -214,6 +224,25 @@ The app estimates calories burned using OpenAI's GPT-4o model and your current w
 2. **AI estimation** - Uses your latest recorded weight and exercise details for accurate calorie burn calculation
 3. **Manual override** - Use `-c` flag to specify exact calories burned if needed
 4. **Daily tracking** - View total calories burned per day with trend analysis
+
+### Cloud Storage with Supabase
+The app supports optional cloud storage using Supabase for data synchronization across devices:
+
+1. **Setup** - Run `fasting setup --supabase` to configure cloud storage
+2. **Automatic sync** - All data (meals, exercises, weight, fasts) stored in Supabase
+3. **Cross-device access** - Access your data from multiple devices with the same configuration
+4. **Local fallback** - Switch back to local storage anytime with `fasting setup --local`
+
+**Required Supabase Configuration:**
+- Supabase URL
+- Service Role Key
+
+**Environment Variables (optional):**
+```bash
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+FASTING_STORAGE_MODE=supabase  # or 'local'
+```
 
 ### Size Examples
 - **Drinks**: "32oz", "16oz", "large", "small", "2 cups"
@@ -337,6 +366,27 @@ pnpm test:exercise       # Exercise tracking tests
 - **Exercise Tracking**: Exercise logging, calorie burn estimation, daily aggregation, chart generation
 
 All tests use isolated temporary directories to avoid interfering with real user data.
+
+### Git Pre-commit Hook
+
+The project includes a git pre-commit hook that runs syntax checks before allowing commits:
+
+```bash
+# The hook runs automatically on git commit
+git commit -m "Your commit message"
+
+# To manually run the pre-commit check
+pnpm run pre-commit
+```
+
+The pre-commit hook performs:
+- **Syntax validation** - Ensures all JavaScript files are syntactically correct
+- **Basic linting** - Catches common errors before they reach the repository
+
+To bypass the pre-commit hook (not recommended):
+```bash
+git commit --no-verify -m "Your commit message"
+```
 
 ### Examples
 
