@@ -10,6 +10,7 @@ import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir, set
 import { getSizeExamples } from '../lib/units.js';
 import { createWeightChart, createFastChart, createCalorieChart, createExerciseChart, createSummaryTable } from '../lib/charts.js';
 import { initializeSupabaseTables, testSupabaseConnection } from '../lib/supabase.js';
+import { generateMealRecommendations, formatRecommendations } from '../lib/meal-recommender.js';
 
 const program = new Command();
 
@@ -152,6 +153,44 @@ program
     
     await logExercise(description, durationInMinutes, finalCalories);
     console.log(`Exercise logged: ${description} (${durationInMinutes} min, ${finalCalories} calories burned)`);
+  });
+
+program
+  .command('recommend [preference]')
+  .option('-t, --type <type>', 'Meal type (breakfast, lunch, dinner, snack)')
+  .option('-c, --calories <number>', 'Target calories for the meal')
+  .option('-d, --dietary <restrictions>', 'Dietary restrictions (vegetarian, vegan, gluten-free, etc.)')
+  .description('Get AI-powered meal recommendations based on your preferences and current status')
+  .action(async (preference, { type, calories, dietary }) => {
+    console.log('🤖 Generating personalized meal recommendations...\n');
+    
+    try {
+      const options = {};
+      if (type) options.mealType = type;
+      if (calories) options.calorieTarget = Number(calories);
+      if (dietary) options.dietaryRestrictions = dietary;
+      
+      const recommendations = await generateMealRecommendations(preference || '', options);
+      const formattedOutput = formatRecommendations(recommendations);
+      
+      console.log(formattedOutput);
+      
+    } catch (error) {
+      console.error(`❌ ${error.message}`);
+      
+      if (error.message.includes('OpenAI API key')) {
+        console.log('\n💡 To use AI recommendations, run: fasting setup');
+      } else {
+        console.log('\n💡 Here are some general healthy meal ideas:');
+        console.log('• Grilled chicken with vegetables');
+        console.log('• Quinoa salad with mixed greens');
+        console.log('• Salmon with sweet potato');
+        console.log('• Greek yogurt with berries and nuts');
+        console.log('• Vegetable stir-fry with brown rice');
+      }
+      
+      process.exit(1);
+    }
   });
 
 program
@@ -545,6 +584,8 @@ program
         console.log('  fasting drink "Orange juice" --size "500ml"');
       }
       console.log('  fasting exercise "Running" 30');
+      console.log('  fasting recommend sandwiches');
+      console.log('  fasting recommend --type breakfast');
       
       const currentMode = getStorageMode();
       console.log(`\n📊 Current storage mode: ${currentMode}`);
