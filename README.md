@@ -380,8 +380,9 @@ pnpm run pre-commit
 ```
 
 The pre-commit hook performs:
-- **Syntax validation** - Ensures all JavaScript files are syntactically correct
-- **Basic linting** - Catches common errors before they reach the repository
+- **Full test suite** - Runs all unit tests to ensure code quality
+- **Comprehensive validation** - Tests all functionality including async operations, storage, and charts
+- **Quality assurance** - Prevents broken code from being committed
 
 To bypass the pre-commit hook (not recommended):
 ```bash

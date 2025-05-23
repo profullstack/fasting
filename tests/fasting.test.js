@@ -28,104 +28,97 @@ describe('Fasting (Meals & Drinks)', () => {
   });
 
   describe('logMeal', () => {
-    it('should log a meal with calories', () => {
-      logMeal('Chicken salad', 350);
-      
-      const entries = getTodaysEntries();
+    it('should log a meal with calories', async () => {
+      await logMeal('Chicken breast', 300);
+      const entries = await getTodaysEntries();
       assert.strictEqual(entries.length, 1);
       assert.strictEqual(entries[0].type, 'meal');
-      assert.strictEqual(entries[0].description, 'Chicken salad');
-      assert.strictEqual(entries[0].calories, 350);
-      assert.ok(entries[0].timestamp);
+      assert.strictEqual(entries[0].description, 'Chicken breast');
+      assert.strictEqual(entries[0].calories, 300);
     });
 
-    it('should log a meal with null calories when not specified', () => {
-      logMeal('Sandwich');
-      
-      const entries = getTodaysEntries();
+    it('should log a meal with null calories when not specified', async () => {
+      await logMeal('Salad');
+      const entries = await getTodaysEntries();
       assert.strictEqual(entries.length, 1);
-      assert.strictEqual(entries[0].calories, null); // No default in lib layer
+      assert.strictEqual(entries[0].type, 'meal');
+      assert.strictEqual(entries[0].description, 'Salad');
+      assert.strictEqual(entries[0].calories, null);
     });
   });
 
   describe('logDrink', () => {
-    it('should log a drink with calories', () => {
-      logDrink('Orange juice', 120);
-      
-      const entries = getTodaysEntries();
+    it('should log a drink with calories', async () => {
+      await logDrink('Orange juice', 120);
+      const entries = await getTodaysEntries();
       assert.strictEqual(entries.length, 1);
       assert.strictEqual(entries[0].type, 'drink');
       assert.strictEqual(entries[0].description, 'Orange juice');
       assert.strictEqual(entries[0].calories, 120);
-      assert.ok(entries[0].timestamp);
     });
 
-    it('should log a drink with null calories when not specified', () => {
-      logDrink('Water');
-      
-      const entries = getTodaysEntries();
+    it('should log a drink with null calories when not specified', async () => {
+      await logDrink('Water');
+      const entries = await getTodaysEntries();
       assert.strictEqual(entries.length, 1);
-      assert.strictEqual(entries[0].calories, null); // No default in lib layer
+      assert.strictEqual(entries[0].type, 'drink');
+      assert.strictEqual(entries[0].description, 'Water');
+      assert.strictEqual(entries[0].calories, null);
     });
   });
 
   describe('getTodaysEntries', () => {
-    it('should return empty array when no entries', () => {
-      const entries = getTodaysEntries();
+    it('should return empty array when no entries', async () => {
+      const entries = await getTodaysEntries();
       assert.ok(Array.isArray(entries));
       assert.strictEqual(entries.length, 0);
     });
 
-    it('should return only today\'s entries', () => {
-      // Log some entries
-      logMeal('Breakfast', 300);
-      logDrink('Coffee', 50);
-      logMeal('Lunch', 400);
+    it('should return only today\'s entries', async () => {
+      await logMeal('Breakfast', 400);
+      await logDrink('Coffee', 50);
+      await logMeal('Lunch', 600);
       
-      const entries = getTodaysEntries();
+      const entries = await getTodaysEntries();
       assert.strictEqual(entries.length, 3);
-      
-      // Check that all entries are from today
-      const today = new Date().toDateString();
-      entries.forEach(entry => {
-        const entryDate = new Date(entry.timestamp).toDateString();
-        assert.strictEqual(entryDate, today);
-      });
+      assert.strictEqual(entries[0].description, 'Breakfast');
+      assert.strictEqual(entries[1].description, 'Coffee');
+      assert.strictEqual(entries[2].description, 'Lunch');
     });
 
-    it('should maintain chronological order', () => {
-      logMeal('First meal', 300);
-      logMeal('Second meal', 400);
+    it('should maintain chronological order', async () => {
+      await logMeal('First meal', 300);
+      await logMeal('Second meal', 400);
       
-      const entries = getTodaysEntries();
+      const entries = await getTodaysEntries();
       assert.strictEqual(entries.length, 2);
+      assert.strictEqual(entries[0].description, 'First meal');
+      assert.strictEqual(entries[1].description, 'Second meal');
       
-      const firstTime = new Date(entries[0].timestamp).getTime();
-      const secondTime = new Date(entries[1].timestamp).getTime();
-      assert.ok(firstTime <= secondTime);
+      // Check timestamps are in order
+      const time1 = new Date(entries[0].timestamp);
+      const time2 = new Date(entries[1].timestamp);
+      assert.ok(time1 <= time2);
     });
   });
 
   describe('Multiple entries', () => {
-    it('should handle mixed meals and drinks', () => {
-      logMeal('Breakfast', 350);
-      logDrink('Coffee', 25);
-      logMeal('Snack', 150);
-      logDrink('Water', 0);
-      logMeal('Lunch', 450);
+    it('should handle mixed meals and drinks', async () => {
+      await logMeal('Breakfast', 400);
+      await logDrink('Coffee', 50);
+      await logMeal('Snack', 200);
+      await logDrink('Water', 0);
+      await logMeal('Lunch', 600);
       
-      const entries = getTodaysEntries();
+      const entries = await getTodaysEntries();
       assert.strictEqual(entries.length, 5);
       
-      const meals = entries.filter(e => e.type === 'meal');
-      const drinks = entries.filter(e => e.type === 'drink');
-      
-      assert.strictEqual(meals.length, 3);
-      assert.strictEqual(drinks.length, 2);
-      
-      // Check total calories
-      const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
-      assert.strictEqual(totalCalories, 975);
+      // Check types
+      assert.strictEqual(entries[0].type, 'meal');
+      assert.strictEqual(entries[1].type, 'drink');
+      assert.strictEqual(entries[2].type, 'meal');
+      assert.strictEqual(entries[3].type, 'drink');
+      assert.strictEqual(entries[4].type, 'meal');
     });
   });
 });

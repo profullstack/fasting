@@ -33,7 +33,7 @@
     "example:api": "node examples/api-usage.js",
     "cli": "./bin/cli.js",
     "prepare": "husky",
-    "pre-commit": "echo 'Running basic syntax check...' && node --check bin/cli.js && echo 'Syntax check passed!'"
+    "pre-commit": "pnpm test"
   },
   "keywords": [
     "fasting",
