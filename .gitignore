@@ -37,3 +37,4 @@ Thumbs.db
 supabase/.temppackage-lock.json
 pnpm-lock.json
 package-lock.json
+pnpm-lock.yaml

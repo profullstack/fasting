@@ -160,6 +160,17 @@ fasting setup --local               # Use local file storage
 fasting setup --supabase            # Use Supabase cloud storage
 ```
 
+### Data Export & Backup
+```bash
+# Export all fasting data and configuration to a zip file
+fasting export                       # Creates ~/fasting.zip with all data
+
+# To restore on another machine:
+# 1. Copy fasting.zip to the target machine
+# 2. Extract: unzip ~/fasting.zip -d ~
+# 3. Data will be restored to ~/.config/fasting/
+```
+
 ### Manual Calorie Override
 ```bash
 # Override automatic estimation with manual calories
@@ -188,6 +199,7 @@ fasting drink "Smoothie" --size "16oz" --calories 350
 - `setup --timezone` - Configure timezone preference for accurate date calculations
 - `setup --supabase` - Configure Supabase cloud storage
 - `setup --local` - Switch to local file storage
+- `export` - Export all fasting data and configuration to ~/fasting.zip
 - `clean` - Delete all stored data (meals, weight, fasts, exercises)
 
 ### Command Options
@@ -390,6 +402,8 @@ The app stores all data in `~/.config/fasting/` for secure, persistent access:
 
 - **Configuration**: Run `fasting setup` to configure or update your API key
 - **Data Storage**: All meals, drinks, and weight data are stored locally
+- **Data Export**: Use `fasting export` to create a backup zip file at `~/fasting.zip`
+- **Data Restore**: Extract the zip file with `unzip ~/fasting.zip -d ~` to restore data
 - **Environment Variable**: You can use `OPENAI_API_KEY` as an alternative (takes precedence)
 - **Clean Data**: Use `fasting clean` to delete meals/weight data
 - **Full Reset**: Use `fasting clean --config` to delete everything including API key

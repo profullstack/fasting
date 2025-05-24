@@ -813,4 +813,89 @@ program
     }
   });
 
+program
+  .command('export')
+  .description('Export all fasting data and configuration to ~/fasting.zip')
+  .action(async () => {
+    console.log('📦 Exporting Fasting Data\n');
+    
+    try {
+      const { createReadStream, existsSync } = await import('fs');
+      const { createWriteStream } = await import('fs');
+      const { pipeline } = await import('stream/promises');
+      const archiver = await import('archiver');
+      const { homedir } = await import('os');
+      const { join } = await import('path');
+      
+      const configDir = getConfigDir();
+      const exportPath = join(homedir(), 'fasting.zip');
+      
+      // Check if config directory exists
+      if (!existsSync(configDir)) {
+        console.log('❌ No fasting data found to export.');
+        console.log(`Expected data directory: ${configDir}`);
+        return;
+      }
+      
+      // Create output stream
+      const output = createWriteStream(exportPath);
+      const archive = archiver.default('zip', {
+        zlib: { level: 9 } // Maximum compression
+      });
+      
+      // Handle archive events
+      archive.on('warning', (err) => {
+        if (err.code === 'ENOENT') {
+          console.warn('Warning:', err.message);
+        } else {
+          throw err;
+        }
+      });
+      
+      archive.on('error', (err) => {
+        throw err;
+      });
+      
+      // Pipe archive data to the file
+      archive.pipe(output);
+      
+      // Add the entire .config/fasting directory to the zip
+      // This will preserve the directory structure when extracted
+      archive.directory(configDir, '.config/fasting');
+      
+      // Finalize the archive
+      await archive.finalize();
+      
+      // Wait for the output stream to finish
+      await new Promise((resolve, reject) => {
+        output.on('close', resolve);
+        output.on('error', reject);
+      });
+      
+      console.log(`✅ Fasting data exported to: ${exportPath}`);
+      console.log(`📁 Archive size: ${archive.pointer()} bytes`);
+      console.log('\n💡 To restore this data on another machine:');
+      console.log(`   1. Copy ${exportPath} to the target machine`);
+      console.log('   2. Extract: unzip ~/fasting.zip -d ~');
+      console.log('   3. The data will be restored to ~/.config/fasting/');
+      
+    } catch (error) {
+      console.error('❌ Error exporting data:', error.message);
+      
+      if (error.message.includes('archiver')) {
+        console.log('\n💡 Installing required dependency...');
+        try {
+          const { execSync } = await import('child_process');
+          execSync('npm install archiver', { stdio: 'inherit' });
+          console.log('✅ Dependency installed. Please run the export command again.');
+        } catch (installError) {
+          console.error('❌ Failed to install archiver dependency.');
+          console.log('Please install manually: npm install archiver');
+        }
+      }
+      
+      process.exit(1);
+    }
+  });
+
 program.parse(process.argv);
