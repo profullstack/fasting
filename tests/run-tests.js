@@ -18,7 +18,8 @@ const testFiles = [
   'exercise-duration.test.js',
   'meal-recommender.test.js',
   'exercise-recommender.test.js',
-  'drink-recommender.test.js'
+  'drink-recommender.test.js',
+  'activity-conditions.test.js'
 ];
 
 console.log('🧪 Running Fasting App Tests\n');

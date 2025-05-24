@@ -1,15 +1,16 @@
 # Fasting App
 
-A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal tracking, weight monitoring, fast history, and AI-powered meal recommendations with visual charts.
+A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal tracking, weight monitoring, fast history, and AI-powered personalized recommendations with visual charts.
 
 ## Features
 
 - **Fast tracking** - Start/end fasts with duration tracking and history
 - **Meal & drink logging** - Track consumption during eating windows with intelligent unit support
 - **Exercise tracking** - Log workouts with flexible duration formats (minutes/hours) and automatic calorie burn estimation
-- **🤖 AI-powered meal recommendations** - Get personalized meal suggestions based on your fasting status, preferences, and dietary goals
+- **🤖 AI-powered personalized recommendations** - Get meal, exercise, and drink suggestions based on your activity level, medical conditions, fasting status, and preferences
+- **👤 User profile management** - Set activity level (sedentary/moderate/active) and medical conditions for personalized recommendations
 - **📏 Imperial/Metric unit system support** - Comprehensive support for both measurement systems with automatic conversion
-- **Automatic calorie estimation** using OpenAI's GPT-4o model for food and exercise with unit-aware prompts
+- **Automatic calorie estimation** using OpenAI's GPT-4o model for food and exercise with personalized prompts
 - **Weight monitoring** - Log and visualize weight trends with ASCII charts in your preferred units
 - **Calorie tracking** - Daily calorie intake and burn visualization with line charts
 - **Cloud storage** - Optional Supabase integration for cloud data storage and sync
@@ -19,7 +20,19 @@ A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal t
 - **Smart unit parsing** - Supports various unit formats (kg, lbs, ml, fl oz, cups, hours, minutes)
 - Manual calorie override when needed
 
-## Setup
+## Setup (usage)
+
+1. Install the CLI:
+```bash
+pnpm install -g @profullstack/fasting
+```
+
+2. Configure OpenAI API key, unit system, timezone, and user profile:
+```bash
+fasting setup
+```
+
+## Setup (Development)
 
 1. Install dependencies:
 ```bash
@@ -31,12 +44,12 @@ pnpm install
 pnpm link --global
 ```
 
-2. Configure OpenAI API key, unit system, and timezone preferences:
+2. Configure OpenAI API key, unit system, timezone, and user profile:
 ```bash
 fasting setup
 ```
 
-The setup command will prompt you for your OpenAI API key, unit system preference (imperial/metric), and timezone, saving them securely to `~/.config/fasting/config.json`.
+The setup command will prompt you for your OpenAI API key, unit system preference (imperial/metric), timezone, activity level, and medical conditions, saving them securely to `~/.config/fasting/config.json`.
 
 **Alternative**: You can also set the `OPENAI_API_KEY` environment variable if you prefer.
 
@@ -99,9 +112,24 @@ fasting meal "Chicken breast" --size "150g"   # Metric
 fasting meal "Salad" -s "large"
 ```
 
-### AI-Powered Meal Recommendations
+### User Profile Management
 ```bash
-# Get personalized meal recommendations based on your current status
+# Set your activity level for personalized recommendations
+fasting activity sedentary    # Little to no exercise, desk job
+fasting activity moderate     # Light exercise 1-3 days/week, some walking
+fasting activity active       # Moderate to intense exercise 3-5+ days/week
+
+# Manage medical conditions for health-conscious recommendations
+fasting condition add "high blood pressure"
+fasting condition add diabetes
+fasting condition remove diabetes
+fasting condition list       # Show current profile
+fasting condition clear      # Remove all conditions
+```
+
+### AI-Powered Personalized Recommendations
+```bash
+# Get personalized meal recommendations based on your profile and current status
 fasting recommend
 
 # Get recommendations for specific food types
@@ -114,6 +142,15 @@ fasting recommend --type breakfast
 fasting recommend --type lunch --calories 400
 fasting recommend --type dinner --dietary vegetarian
 fasting recommend pasta --calories 500 --dietary "gluten-free"
+
+# Get exercise recommendations based on your activity level and conditions
+fasting recommend --exercise
+fasting recommend --exercise --type cardio --intensity moderate
+fasting recommend --exercise --equipment "dumbbells, yoga mat"
+
+# Get drink recommendations based on your profile
+fasting recommend --drink
+fasting recommend --drink --type smoothie --purpose "post-workout"
 ```
 
 ### Exercise Tracking
@@ -185,15 +222,19 @@ fasting drink "Smoothie" --size "16oz" --calories 350
 
 ### Core Commands
 - `fast <start|end>` - Start or end a fast with optional custom timing
-- `meal <description>` - Log a meal with automatic calorie estimation and unit-aware prompts
-- `drink <description>` - Log a drink with automatic calorie estimation and unit-aware prompts
-- `exercise <description> <duration>` - Log exercise with flexible duration formats and automatic calorie burn estimation
+- `meal <description>` - Log a meal with automatic calorie estimation and personalized prompts
+- `drink <description>` - Log a drink with automatic calorie estimation and personalized prompts
+- `exercise <description> <duration>` - Log exercise with flexible duration formats and personalized calorie burn estimation
 - `weight <value>` - Log weight with automatic unit conversion (supports lbs, kg, oz, g)
-- `recommend [preference]` - Get AI-powered personalized meal recommendations
+- `recommend [preference]` - Get AI-powered personalized meal, exercise, and drink recommendations
 - `summary` - Show comprehensive dashboard with current status, charts, and history
 
+### User Profile Commands
+- `activity <level>` - Set activity level (sedentary, moderate, active) for personalized recommendations
+- `condition <action> [condition]` - Manage medical conditions (add, remove, list, clear)
+
 ### Setup & Management
-- `setup` - Configure OpenAI API key, unit system, and timezone preferences
+- `setup` - Configure OpenAI API key, unit system, timezone, and user profile preferences
 - `setup --units` - Configure unit system preference (imperial/metric)
 - `setup --weight-unit` - Configure weight unit preference (lbs/kg)
 - `setup --timezone` - Configure timezone preference for accurate date calculations
@@ -221,11 +262,27 @@ fasting drink "Smoothie" --size "16oz" --calories 350
   - Examples: "30", "30 minutes", "45min", "1.5 hours", "2h", "90 min"
 
 **Recommend Command:**
-- `-t, --type <type>` - Meal type (breakfast, lunch, dinner, snack)
-- `-c, --calories <number>` - Target calories for the meal
+- `--meal` - Get meal recommendations (default)
+- `--drink` - Get drink/beverage recommendations
+- `--exercise` - Get exercise/workout recommendations
+- `-t, --type <type>` - Meal type (breakfast, lunch, dinner, snack) or drink type (smoothie, tea, coffee, etc.) or exercise type (cardio, strength, yoga, etc.)
+- `-c, --calories <number>` - Target calories for the meal/drink or duration in minutes for exercise
 - `-d, --dietary <restrictions>` - Dietary restrictions (vegetarian, vegan, gluten-free, etc.)
-- `[preference]` - Food preference or category (optional)
-  - Examples: "sandwiches", "salads", "pasta", "healthy breakfast"
+- `--intensity <level>` - Exercise intensity (low, moderate, high) - for exercise recommendations
+- `--equipment <items>` - Available equipment (e.g., "dumbbells, yoga mat") - for exercise recommendations
+- `--location <place>` - Exercise location (home, gym, outdoor) - for exercise recommendations
+- `--purpose <goal>` - Drink purpose (hydration, energy, post-workout, relaxation) - for drink recommendations
+- `[preference]` - Food/exercise/drink preference or category (optional)
+  - Examples: "sandwiches", "salads", "pasta", "healthy breakfast", "cardio", "smoothies"
+
+**Activity Command:**
+- `<level>` - Activity level: sedentary, moderate, or active
+
+**Condition Command:**
+- `add <condition>` - Add a medical condition (e.g., "high blood pressure", "diabetes")
+- `remove <condition>` - Remove a medical condition
+- `list` - Show current user profile (activity level and medical conditions)
+- `clear` - Remove all medical conditions
 
 **Weight Command:**
 - Supports multiple units with automatic conversion
@@ -282,7 +339,7 @@ fasting-app/
 ### User Data (stored in ~/.config/fasting/)
 ```
 ~/.config/fasting/
-├── config.json     # API key and settings
+├── config.json     # API key, settings, activity level, and medical conditions
 ├── meals.json      # Meal and drink logs
 ├── weight.json     # Weight history
 ├── fasts.json      # Fast tracking history
@@ -317,31 +374,42 @@ Accurate timezone handling for proper date calculations:
 4. **Automatic detection** - Defaults to your system timezone if not configured
 5. **Cross-timezone consistency** - Maintains accurate data even when traveling
 
-### Calorie Estimation
-Automatic calorie estimation using OpenAI's GPT-4o model with unit awareness:
+### User Profile & Personalization
+Comprehensive user profile management for personalized recommendations:
 
-1. The description (and optional size) is sent to OpenAI's API with unit system context
-2. The AI estimates calories based on the specified portion size in your preferred units
+1. **Activity Level**: Set your activity level (sedentary, moderate, active) to get appropriate calorie and exercise recommendations
+2. **Medical Conditions**: Add conditions like "high blood pressure" or "diabetes" for health-conscious recommendations
+3. **Personalized AI**: All OpenAI calls include your profile for tailored suggestions
+4. **Smart Recommendations**: Meal, exercise, and drink suggestions consider your health profile and activity level
+5. **Profile Management**: Easy commands to view, update, and manage your profile settings
+
+### Calorie Estimation
+Automatic calorie estimation using OpenAI's GPT-4o model with personalized context:
+
+1. The description (and optional size) is sent to OpenAI's API with unit system and user profile context
+2. The AI estimates calories based on your activity level, medical conditions, and specified portion size
 3. Size parsing handles both imperial and metric measurements automatically
-4. The estimated calories are logged along with your food/drink
+4. Personalized estimates consider your health profile for appropriate portion sizing
 5. You can specify portion sizes with `--size` for more accurate estimates
 6. You can still manually override with the `-c` flag if needed
 
-### AI-Powered Meal Recommendations
-Personalized meal suggestions based on your current status:
+### AI-Powered Personalized Recommendations
+Comprehensive recommendation system for meals, exercises, and drinks based on your profile:
 
-1. **Context analysis** - Considers your current fasting status, recent meals, weight, and calorie history
-2. **Preference matching** - Takes food preferences and dietary restrictions into account
-3. **Smart suggestions** - Provides 3-5 meal options with detailed nutrition information
-4. **Unit-aware portions** - Portion sizes provided in your configured unit system
-5. **Personalized advice** - Includes tailored advice based on your fasting goals and current progress
-6. **Fallback support** - Works even without OpenAI API key with sensible default recommendations
+1. **Profile-aware analysis** - Considers your activity level, medical conditions, fasting status, recent meals, weight, and history
+2. **Multi-type recommendations** - Get suggestions for meals, exercises, or drinks based on your needs
+3. **Health-conscious suggestions** - Recommendations consider medical conditions for heart-healthy, diabetic-friendly options
+4. **Activity-appropriate content** - Exercise intensity and meal portions matched to your activity level
+5. **Unit-aware portions** - All measurements provided in your configured unit system
+6. **Personalized advice** - Includes tailored advice based on your health profile and goals
+7. **Fallback support** - Works even without OpenAI API key with sensible default recommendations
 
 **Recommendation Features:**
-- **Contextual awareness**: Knows if you're fasting, your recent meals, and calorie intake
-- **Flexible preferences**: Support for food categories ("sandwiches", "salads") and meal types
-- **Advanced filtering**: Calorie targets, dietary restrictions, meal timing
-- **Rich information**: Includes prep time, ingredients, nutrition notes, and portion sizes
+- **Health profile integration**: Activity level and medical conditions inform all suggestions
+- **Contextual awareness**: Knows if you're fasting, your recent meals, exercises, and intake
+- **Multi-category support**: Meals ("sandwiches", "salads"), exercises ("cardio", "strength"), drinks ("smoothies", "teas")
+- **Advanced filtering**: Calorie targets, dietary restrictions, exercise intensity, equipment availability
+- **Rich information**: Includes prep time, ingredients, nutrition notes, exercise instructions, and safety tips
 - **Beautiful formatting**: Well-structured output with clear sections and helpful tips
 
 ### Visual Charts
@@ -352,12 +420,14 @@ Personalized meal suggestions based on your current status:
 - **Comprehensive summary** - All-in-one dashboard with current fast status, today's meals, exercises, statistics, and charts
 
 ### Exercise Tracking
-The app estimates calories burned using OpenAI's GPT-4o model and your current weight:
+The app estimates calories burned using OpenAI's GPT-4o model with personalized context:
 
 1. **Log exercise** - Provide exercise description and duration in minutes
-2. **AI estimation** - Uses your latest recorded weight and exercise details for accurate calorie burn calculation
-3. **Manual override** - Use `-c` flag to specify exact calories burned if needed
-4. **Daily tracking** - View total calories burned per day with trend analysis
+2. **Personalized AI estimation** - Uses your activity level, medical conditions, weight, and exercise details for accurate calorie burn calculation
+3. **Health-aware recommendations** - Exercise suggestions consider your medical conditions for safe, appropriate workouts
+4. **Activity-matched intensity** - Recommendations match your current activity level for progressive fitness
+5. **Manual override** - Use `-c` flag to specify exact calories burned if needed
+6. **Daily tracking** - View total calories burned per day with trend analysis
 
 ### Cloud Storage with Supabase
 The app supports optional cloud storage using Supabase for data synchronization across devices:
@@ -432,10 +502,12 @@ import {
   logExercise, getTodaysExercises, getExerciseHistory
 } from 'fasting-app';
 
-// NEW: Import meal recommendation and unit functions
+// NEW: Import recommendation and unit functions
 import { generateMealRecommendations, formatRecommendations } from 'fasting-app/lib/meal-recommender.js';
+import { generateExerciseRecommendations, formatExerciseRecommendations } from 'fasting-app/lib/exercise-recommender.js';
+import { generateDrinkRecommendations, formatDrinkRecommendations } from 'fasting-app/lib/drink-recommender.js';
 import { parseSize, convertVolume, getSizeExamples } from 'fasting-app/lib/units.js';
-import { getUnitSystem, setUnitSystem } from 'fasting-app/lib/config.js';
+import { getUnitSystem, setUnitSystem, getActivityLevel, setActivityLevel, getMedicalConditions, addMedicalCondition, getUserProfile } from 'fasting-app/lib/config.js';
 
 // Fast tracking
 startFast(); // Start fast now
@@ -467,14 +539,34 @@ logExercise('Running', 30, 300); // description, duration (min), calories burned
 const todaysExercises = getTodaysExercises(); // Today's exercises
 const exerciseHistory = getExerciseHistory(); // Daily exercise calorie totals
 
-// NEW: AI-powered meal recommendations
-const recommendations = await generateMealRecommendations('sandwiches', {
+// NEW: User profile management
+setActivityLevel('active'); // or 'sedentary', 'moderate'
+const activityLevel = getActivityLevel();
+addMedicalCondition('high blood pressure');
+addMedicalCondition('diabetes');
+const conditions = getMedicalConditions(); // ['high blood pressure', 'diabetes']
+const profile = getUserProfile(); // Complete user profile
+
+// NEW: AI-powered personalized recommendations
+const mealRecommendations = await generateMealRecommendations('sandwiches', {
   mealType: 'lunch',
   calorieTarget: 400,
   dietaryRestrictions: 'vegetarian'
 });
-const formattedOutput = formatRecommendations(recommendations);
-console.log(formattedOutput);
+const formattedMeals = formatRecommendations(mealRecommendations);
+
+const exerciseRecommendations = await generateExerciseRecommendations('cardio', {
+  duration: 30,
+  intensity: 'moderate',
+  location: 'home'
+});
+const formattedExercises = formatExerciseRecommendations(exerciseRecommendations);
+
+const drinkRecommendations = await generateDrinkRecommendations('smoothies', {
+  purpose: 'post-workout',
+  calorieTarget: 200
+});
+const formattedDrinks = formatDrinkRecommendations(drinkRecommendations);
 
 // NEW: Unit system management
 setUnitSystem('metric'); // or 'imperial'
@@ -508,9 +600,22 @@ const examples = getSizeExamples('volume'); // ['250ml', '500ml', '1l', '1.5l']
 - **`getTodaysExercises()`** - Get all exercises logged today
 - **`getExerciseHistory()`** - Get daily exercise calorie totals grouped by date
 
-**NEW: AI-Powered Meal Recommendations:**
+**NEW: AI-Powered Personalized Recommendations:**
 - **`generateMealRecommendations(preference, options)`** - Generate personalized meal recommendations
-- **`formatRecommendations(recommendations)`** - Format recommendations for display
+- **`formatRecommendations(recommendations)`** - Format meal recommendations for display
+- **`generateExerciseRecommendations(preference, options)`** - Generate personalized exercise recommendations
+- **`formatExerciseRecommendations(recommendations)`** - Format exercise recommendations for display
+- **`generateDrinkRecommendations(preference, options)`** - Generate personalized drink recommendations
+- **`formatDrinkRecommendations(recommendations)`** - Format drink recommendations for display
+
+**NEW: User Profile Management:**
+- **`getActivityLevel()`** - Get current activity level ('sedentary', 'moderate', 'active')
+- **`setActivityLevel(level)`** - Set activity level preference
+- **`getMedicalConditions()`** - Get array of medical conditions
+- **`addMedicalCondition(condition)`** - Add a medical condition
+- **`removeMedicalCondition(condition)`** - Remove a medical condition
+- **`setMedicalConditions(conditions)`** - Set medical conditions array
+- **`getUserProfile()`** - Get complete user profile object
 
 **NEW: Unit System Management:**
 - **`getUnitSystem()`** - Get current unit system ('imperial' or 'metric')
@@ -554,11 +659,14 @@ pnpm test:exercise       # Exercise tracking tests
 - **Unit System Tests**: Imperial/metric unit parsing, conversion, and configuration
 - **Duration Parsing**: Flexible duration format handling (minutes, hours, mixed formats)
 - **Meal Recommendations**: AI response formatting, JSON parsing, fallback handling
+- **Exercise Recommendations**: Exercise suggestion formatting, intensity handling, equipment filtering
+- **Drink Recommendations**: Beverage suggestion formatting, purpose-based filtering
 - **Unit Conversion**: Volume and weight conversions between imperial and metric
 - **Configuration Management**: Unit system preferences, backward compatibility
+- **User Profile Tests**: Activity level validation, medical condition management, profile integration
 
 **Test Statistics:**
-- **10 test files** with **65 total tests**
+- **11 test files** with **80+ total tests**
 - **100% pass rate** with comprehensive error handling validation
 - **Isolated testing environment** - Uses temporary directories to avoid interfering with real user data
 - **Integration testing** - Validates system consistency and cross-module functionality

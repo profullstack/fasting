@@ -6,7 +6,7 @@ import { logMeal, logDrink, getTodaysEntries, getCalorieHistory, getWeightHistor
 import { logWeight } from '../lib/weight.js';
 import { estimateCalories } from '../lib/calorie-estimator.js';
 import { estimateExerciseCalories } from '../lib/exercise-estimator.js';
-import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir, setSupabaseConfig, getSupabaseConfig, setStorageMode, getStorageMode, isSupabaseConfigured, getWeightUnit, setWeightUnit, getUnitSystem, setUnitSystem, getTimezone, setTimezone } from '../lib/config.js';
+import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir, setSupabaseConfig, getSupabaseConfig, setStorageMode, getStorageMode, isSupabaseConfigured, getWeightUnit, setWeightUnit, getUnitSystem, setUnitSystem, getTimezone, setTimezone, getActivityLevel, setActivityLevel, getMedicalConditions, addMedicalCondition, removeMedicalCondition, setMedicalConditions } from '../lib/config.js';
 import { getSizeExamples } from '../lib/units.js';
 import { createWeightChart, createFastChart, createCalorieChart, createExerciseChart, createSummaryTable } from '../lib/charts.js';
 import { initializeSupabaseTables, testSupabaseConnection } from '../lib/supabase.js';
@@ -379,6 +379,114 @@ program
         console.log('\n');
         console.log(createExerciseChart(exerciseHistory));
       }
+    }
+  });
+
+program
+  .command('activity <level>')
+  .description('Set your activity level (sedentary, moderate, active)')
+  .action(async (level) => {
+    try {
+      setActivityLevel(level);
+      console.log(`✅ Activity level set to: ${level}`);
+      console.log('\n💡 This will be used to personalize your meal, exercise, and calorie recommendations.');
+      
+      // Show what each level means
+      console.log('\nActivity Level Guide:');
+      console.log('• sedentary: Little to no exercise, desk job');
+      console.log('• moderate: Light exercise 1-3 days/week, some walking');
+      console.log('• active: Moderate to intense exercise 3-5+ days/week');
+    } catch (error) {
+      console.error(`❌ ${error.message}`);
+      console.log('\n💡 Valid activity levels:');
+      console.log('  fasting activity sedentary');
+      console.log('  fasting activity moderate');
+      console.log('  fasting activity active');
+      process.exit(1);
+    }
+  });
+
+program
+  .command('condition <action> [condition]')
+  .description('Manage medical conditions (add, remove, list)')
+  .action(async (action, condition) => {
+    try {
+      if (action === 'add') {
+        if (!condition) {
+          console.error('❌ Please specify a condition to add');
+          console.log('\n💡 Examples:');
+          console.log('  fasting condition add "high blood pressure"');
+          console.log('  fasting condition add diabetes');
+          console.log('  fasting condition add "heart disease"');
+          process.exit(1);
+        }
+        
+        addMedicalCondition(condition);
+        console.log(`✅ Added medical condition: ${condition}`);
+        
+        const allConditions = getMedicalConditions();
+        if (allConditions.length > 0) {
+          console.log('\n📋 Current conditions:');
+          allConditions.forEach(c => console.log(`  • ${c}`));
+        }
+        
+      } else if (action === 'remove') {
+        if (!condition) {
+          console.error('❌ Please specify a condition to remove');
+          const allConditions = getMedicalConditions();
+          if (allConditions.length > 0) {
+            console.log('\n📋 Current conditions:');
+            allConditions.forEach(c => console.log(`  • ${c}`));
+            console.log('\n💡 Example: fasting condition remove diabetes');
+          }
+          process.exit(1);
+        }
+        
+        removeMedicalCondition(condition);
+        console.log(`✅ Removed medical condition: ${condition}`);
+        
+        const allConditions = getMedicalConditions();
+        if (allConditions.length > 0) {
+          console.log('\n📋 Remaining conditions:');
+          allConditions.forEach(c => console.log(`  • ${c}`));
+        } else {
+          console.log('\n📋 No medical conditions currently set.');
+        }
+        
+      } else if (action === 'list') {
+        const allConditions = getMedicalConditions();
+        const activityLevel = getActivityLevel();
+        
+        console.log('👤 USER PROFILE');
+        console.log('═'.repeat(30));
+        console.log(`Activity Level: ${activityLevel}`);
+        
+        if (allConditions.length > 0) {
+          console.log('\nMedical Conditions:');
+          allConditions.forEach(c => console.log(`  • ${c}`));
+        } else {
+          console.log('\nMedical Conditions: None');
+        }
+        
+        console.log('\n💡 This information is used to personalize your recommendations.');
+        
+      } else if (action === 'clear') {
+        setMedicalConditions([]);
+        console.log('✅ All medical conditions cleared.');
+        
+      } else {
+        console.error('❌ Invalid action. Use: add, remove, list, or clear');
+        console.log('\n💡 Examples:');
+        console.log('  fasting condition add "high blood pressure"');
+        console.log('  fasting condition remove diabetes');
+        console.log('  fasting condition list');
+        console.log('  fasting condition clear');
+        process.exit(1);
+      }
+      
+    } catch (error) {
+      console.error(`❌ ${error.message}`);
+      process.exit(1);
     }
   });
 
@@ -800,6 +908,67 @@ program
             console.error(`❌ Error setting timezone: ${error.message}`);
           }
         }
+      }
+// Now prompt for activity level and medical conditions
+      console.log('\n👤 User Profile Configuration\n');
+      
+      const currentActivityLevel = getActivityLevel();
+      const currentConditions = getMedicalConditions();
+      
+      console.log(`Current activity level: ${currentActivityLevel}`);
+      console.log(`Current medical conditions: ${currentConditions.length > 0 ? currentConditions.join(', ') : 'None'}`);
+      
+      const { configureProfile } = await prompts({
+        type: 'confirm',
+        name: 'configureProfile',
+        message: 'Would you like to configure your activity level and medical conditions?',
+        initial: true
+      });
+      
+      if (configureProfile) {
+        // Activity level configuration
+        const { newActivityLevel } = await prompts({
+          type: 'select',
+          name: 'newActivityLevel',
+          message: 'Choose your activity level:',
+          choices: [
+            { title: 'Sedentary - Little to no exercise, desk job', value: 'sedentary' },
+            { title: 'Moderate - Light exercise 1-3 days/week, some walking', value: 'moderate' },
+            { title: 'Active - Moderate to intense exercise 3-5+ days/week', value: 'active' }
+          ],
+          initial: currentActivityLevel === 'sedentary' ? 0 : currentActivityLevel === 'moderate' ? 1 : 2
+        });
+        
+        if (newActivityLevel) {
+          setActivityLevel(newActivityLevel);
+          console.log(`✅ Activity level set to: ${newActivityLevel}`);
+        }
+        
+        // Medical conditions configuration
+        const { addConditions } = await prompts({
+          type: 'confirm',
+          name: 'addConditions',
+          message: 'Do you have any medical conditions to add? (e.g., diabetes, high blood pressure)',
+          initial: false
+        });
+        
+        if (addConditions) {
+          const { conditionsInput } = await prompts({
+            type: 'text',
+            name: 'conditionsInput',
+            message: 'Enter medical conditions (comma-separated):',
+            initial: currentConditions.join(', '),
+            validate: value => value.length > 0 ? true : 'Please enter at least one condition or press Ctrl+C to skip'
+          });
+          
+          if (conditionsInput) {
+            const conditions = conditionsInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
+            setMedicalConditions(conditions);
+            console.log(`✅ Medical conditions set: ${conditions.join(', ')}`);
+          }
+        }
+        
+        console.log('\n💡 This information will be used to personalize your meal, exercise, and calorie recommendations.');
       }
       
       console.log('\n� Setup complete! You can now use automatic calorie estimation.');
