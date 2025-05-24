@@ -310,7 +310,7 @@ fasting drink "Smoothie" --size "16oz" --calories 350
 
 ### Project Files
 ```
-fasting-app/
+fasting/
 ├── bin/
 │   └── cli.js
 ├── lib/
@@ -501,14 +501,14 @@ import {
   logWeight, getWeightHistory,
   startFast, endFast, getCurrentFast, getFastHistory, getFastStats,
   logExercise, getTodaysExercises, getExerciseHistory
-} from 'fasting-app';
+} from '@profullstack/fasting';
 
 // NEW: Import recommendation and unit functions
-import { generateMealRecommendations, formatRecommendations } from 'fasting-app/lib/meal-recommender.js';
-import { generateExerciseRecommendations, formatExerciseRecommendations } from 'fasting-app/lib/exercise-recommender.js';
-import { generateDrinkRecommendations, formatDrinkRecommendations } from 'fasting-app/lib/drink-recommender.js';
-import { parseSize, convertVolume, getSizeExamples } from 'fasting-app/lib/units.js';
-import { getUnitSystem, setUnitSystem, getActivityLevel, setActivityLevel, getMedicalConditions, addMedicalCondition, getUserProfile } from 'fasting-app/lib/config.js';
+import { generateMealRecommendations, formatRecommendations } from '@profullstack/fasting/lib/meal-recommender.js';
+import { generateExerciseRecommendations, formatExerciseRecommendations } from '@profullstack/fasting/lib/exercise-recommender.js';
+import { generateDrinkRecommendations, formatDrinkRecommendations } from '@profullstack/fasting/lib/drink-recommender.js';
+import { parseSize, convertVolume, getSizeExamples } from '@profullstack/fasting/lib/units.js';
+import { getUnitSystem, setUnitSystem, getActivityLevel, setActivityLevel, getMedicalConditions, addMedicalCondition, getUserProfile } from '@profullstack/fasting/lib/config.js';
 
 // Fast tracking
 startFast(); // Start fast now
