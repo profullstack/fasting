@@ -11,6 +11,8 @@ import { getSizeExamples } from '../lib/units.js';
 import { createWeightChart, createFastChart, createCalorieChart, createExerciseChart, createSummaryTable } from '../lib/charts.js';
 import { initializeSupabaseTables, testSupabaseConnection } from '../lib/supabase.js';
 import { generateMealRecommendations, formatRecommendations } from '../lib/meal-recommender.js';
+import { generateExerciseRecommendations, formatExerciseRecommendations } from '../lib/exercise-recommender.js';
+import { generateDrinkRecommendations, formatDrinkRecommendations } from '../lib/drink-recommender.js';
 
 const program = new Command();
 
@@ -157,21 +159,62 @@ program
 
 program
   .command('recommend [preference]')
-  .option('-t, --type <type>', 'Meal type (breakfast, lunch, dinner, snack)')
-  .option('-c, --calories <number>', 'Target calories for the meal')
+  .option('--meal', 'Get meal recommendations (default if no specific type specified)')
+  .option('--drink', 'Get drink/beverage recommendations')
+  .option('--exercise', 'Get exercise/workout recommendations')
+  .option('-t, --type <type>', 'Meal type (breakfast, lunch, dinner, snack) or drink type (smoothie, tea, coffee, etc.) or exercise type (cardio, strength, yoga, etc.)')
+  .option('-c, --calories <number>', 'Target calories for the meal/drink or duration in minutes for exercise')
   .option('-d, --dietary <restrictions>', 'Dietary restrictions (vegetarian, vegan, gluten-free, etc.)')
-  .description('Get AI-powered meal recommendations based on your preferences and current status')
-  .action(async (preference, { type, calories, dietary }) => {
-    console.log('🤖 Generating personalized meal recommendations...\n');
+  .option('--intensity <level>', 'Exercise intensity (low, moderate, high) - for exercise recommendations')
+  .option('--equipment <items>', 'Available equipment (e.g., "dumbbells, yoga mat") - for exercise recommendations')
+  .option('--location <place>', 'Exercise location (home, gym, outdoor) - for exercise recommendations')
+  .option('--purpose <goal>', 'Drink purpose (hydration, energy, post-workout, relaxation) - for drink recommendations')
+  .description('Get AI-powered recommendations for meals, drinks, or exercises based on your preferences and current status')
+  .action(async (preference, { meal, drink, exercise, type, calories, dietary, intensity, equipment, location, purpose }) => {
+    // Determine recommendation type
+    let recommendationType = 'meal'; // default
+    if (drink) recommendationType = 'drink';
+    if (exercise) recommendationType = 'exercise';
     
     try {
-      const options = {};
-      if (type) options.mealType = type;
-      if (calories) options.calorieTarget = Number(calories);
-      if (dietary) options.dietaryRestrictions = dietary;
+      let recommendations, formattedOutput;
       
-      const recommendations = await generateMealRecommendations(preference || '', options);
-      const formattedOutput = formatRecommendations(recommendations);
+      if (recommendationType === 'meal') {
+        console.log('🤖 Generating personalized meal recommendations...\n');
+        
+        const options = {};
+        if (type) options.mealType = type;
+        if (calories) options.calorieTarget = Number(calories);
+        if (dietary) options.dietaryRestrictions = dietary;
+        
+        recommendations = await generateMealRecommendations(preference || '', options);
+        formattedOutput = formatRecommendations(recommendations);
+        
+      } else if (recommendationType === 'drink') {
+        console.log('🤖 Generating personalized drink recommendations...\n');
+        
+        const options = {};
+        if (type) options.drinkType = type;
+        if (calories) options.calorieTarget = Number(calories);
+        if (dietary) options.dietaryRestrictions = dietary;
+        if (purpose) options.purpose = purpose;
+        
+        recommendations = await generateDrinkRecommendations(preference || '', options);
+        formattedOutput = formatDrinkRecommendations(recommendations);
+        
+      } else if (recommendationType === 'exercise') {
+        console.log('🤖 Generating personalized exercise recommendations...\n');
+        
+        const options = {};
+        if (type) options.exerciseType = type;
+        if (calories) options.duration = Number(calories); // calories option repurposed as duration for exercises
+        if (intensity) options.intensity = intensity;
+        if (equipment) options.equipment = equipment;
+        if (location) options.location = location;
+        
+        recommendations = await generateExerciseRecommendations(preference || '', options);
+        formattedOutput = formatExerciseRecommendations(recommendations);
+      }
       
       console.log(formattedOutput);
       
@@ -181,12 +224,28 @@ program
       if (error.message.includes('OpenAI API key')) {
         console.log('\n💡 To use AI recommendations, run: fasting setup');
       } else {
-        console.log('\n💡 Here are some general healthy meal ideas:');
-        console.log('• Grilled chicken with vegetables');
-        console.log('• Quinoa salad with mixed greens');
-        console.log('• Salmon with sweet potato');
-        console.log('• Greek yogurt with berries and nuts');
-        console.log('• Vegetable stir-fry with brown rice');
+        if (recommendationType === 'meal') {
+          console.log('\n💡 Here are some general healthy meal ideas:');
+          console.log('• Grilled chicken with vegetables');
+          console.log('• Quinoa salad with mixed greens');
+          console.log('• Salmon with sweet potato');
+          console.log('• Greek yogurt with berries and nuts');
+          console.log('• Vegetable stir-fry with brown rice');
+        } else if (recommendationType === 'drink') {
+          console.log('\n💡 Here are some general healthy drink ideas:');
+          console.log('• Lemon water with honey');
+          console.log('• Green tea with ginger');
+          console.log('• Cucumber mint infused water');
+          console.log('• Herbal tea blends');
+          console.log('• Fresh fruit smoothies');
+        } else if (recommendationType === 'exercise') {
+          console.log('\n💡 Here are some general exercise ideas:');
+          console.log('• 30-minute walk or jog');
+          console.log('• Bodyweight strength circuit');
+          console.log('• Yoga or stretching routine');
+          console.log('• High-intensity interval training');
+          console.log('• Swimming or cycling');
+        }
       }
       
       process.exit(1);
@@ -755,7 +814,9 @@ program
       }
       console.log('  fasting exercise "Running" 30');
       console.log('  fasting recommend sandwiches');
-      console.log('  fasting recommend --type breakfast');
+      console.log('  fasting recommend --meal --type breakfast');
+      console.log('  fasting recommend --drink --type smoothie');
+      console.log('  fasting recommend --exercise --type cardio');
       
       const currentMode = getStorageMode();
       console.log(`\n📊 Current storage mode: ${currentMode}`);
