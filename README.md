@@ -31,12 +31,12 @@ pnpm install
 pnpm link --global
 ```
 
-2. Configure OpenAI API key and unit system preferences:
+2. Configure OpenAI API key, unit system, and timezone preferences:
 ```bash
 fasting setup
 ```
 
-The setup command will prompt you for your OpenAI API key and unit system preference (imperial/metric), saving them securely to `~/.config/fasting/config.json`.
+The setup command will prompt you for your OpenAI API key, unit system preference (imperial/metric), and timezone, saving them securely to `~/.config/fasting/config.json`.
 
 **Alternative**: You can also set the `OPENAI_API_KEY` environment variable if you prefer.
 
@@ -152,6 +152,9 @@ fasting summary --exercise-chart     # Show only exercise calories burned chart
 fasting setup --units               # Interactive unit system setup
 fasting setup --weight-unit         # Configure just weight units (lbs/kg)
 
+# Configure timezone for accurate "today's" data calculation
+fasting setup --timezone            # Interactive timezone setup
+
 # Switch storage modes
 fasting setup --local               # Use local file storage
 fasting setup --supabase            # Use Supabase cloud storage
@@ -179,9 +182,10 @@ fasting drink "Smoothie" --size "16oz" --calories 350
 - `summary` - Show comprehensive dashboard with current status, charts, and history
 
 ### Setup & Management
-- `setup` - Configure OpenAI API key and unit system preferences
+- `setup` - Configure OpenAI API key, unit system, and timezone preferences
 - `setup --units` - Configure unit system preference (imperial/metric)
 - `setup --weight-unit` - Configure weight unit preference (lbs/kg)
+- `setup --timezone` - Configure timezone preference for accurate date calculations
 - `setup --supabase` - Configure Supabase cloud storage
 - `setup --local` - Switch to local file storage
 - `clean` - Delete all stored data (meals, weight, fasts, exercises)
@@ -225,6 +229,7 @@ fasting drink "Smoothie" --size "16oz" --calories 350
 **Setup Command:**
 - `--units` - Configure unit system preference (imperial/metric)
 - `--weight-unit` - Configure weight unit preference (lbs/kg)
+- `--timezone` - Configure timezone preference for accurate date calculations
 - `--supabase` - Configure Supabase cloud storage
 - `--local` - Switch to local file storage
 
@@ -290,6 +295,15 @@ Comprehensive imperial and metric unit support:
 3. **User preferences** - Configure your preferred unit system during setup
 4. **Flexible input** - Accept various formats ("500ml", "16oz", "2 cups", "1.5 hours")
 5. **AI integration** - Provides unit-aware prompts to AI for better estimates
+
+### Timezone Support
+Accurate timezone handling for proper date calculations:
+
+1. **Timezone awareness** - All timestamps are stored using your configured timezone
+2. **Today's data** - "Today's" meals, exercises, and summaries respect your local timezone
+3. **Flexible configuration** - Choose from common timezones or specify custom ones
+4. **Automatic detection** - Defaults to your system timezone if not configured
+5. **Cross-timezone consistency** - Maintains accurate data even when traveling
 
 ### Calorie Estimation
 Automatic calorie estimation using OpenAI's GPT-4o model with unit awareness:

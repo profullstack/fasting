@@ -6,7 +6,7 @@ import { logMeal, logDrink, getTodaysEntries, getCalorieHistory, getWeightHistor
 import { logWeight } from '../lib/weight.js';
 import { estimateCalories } from '../lib/calorie-estimator.js';
 import { estimateExerciseCalories } from '../lib/exercise-estimator.js';
-import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir, setSupabaseConfig, getSupabaseConfig, setStorageMode, getStorageMode, isSupabaseConfigured, getWeightUnit, setWeightUnit, getUnitSystem, setUnitSystem } from '../lib/config.js';
+import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir, setSupabaseConfig, getSupabaseConfig, setStorageMode, getStorageMode, isSupabaseConfigured, getWeightUnit, setWeightUnit, getUnitSystem, setUnitSystem, getTimezone, setTimezone } from '../lib/config.js';
 import { getSizeExamples } from '../lib/units.js';
 import { createWeightChart, createFastChart, createCalorieChart, createExerciseChart, createSummaryTable } from '../lib/charts.js';
 import { initializeSupabaseTables, testSupabaseConnection } from '../lib/supabase.js';
@@ -329,8 +329,9 @@ program
   .option('--local', 'Switch to local file storage')
   .option('--weight-unit', 'Configure weight unit preference (lbs or kg)')
   .option('--units', 'Configure unit system preference (imperial or metric)')
-  .description('Configure OpenAI API key, unit systems, and optionally Supabase cloud storage')
-  .action(async ({ supabase, local, weightUnit, units }) => {
+  .option('--timezone', 'Configure timezone preference')
+  .description('Configure OpenAI API key, unit systems, timezone, and optionally Supabase cloud storage')
+  .action(async ({ supabase, local, weightUnit, units, timezone }) => {
     console.log('🔧 Fasting App Setup\n');
     
     if (local) {
@@ -414,6 +415,89 @@ program
         console.log('  fasting weight 138.5kg');
         console.log('  fasting weight 138.5     # Will use kg');
         console.log('  fasting weight 305.8lbs  # Will convert to kg');
+      }
+      return;
+    }
+    
+    if (timezone) {
+      console.log('🌍 Timezone Configuration\n');
+      
+      const currentTimezone = getTimezone();
+      console.log(`Current timezone: ${currentTimezone}`);
+      
+      // Get common timezones
+      const commonTimezones = [
+        'America/New_York',
+        'America/Chicago',
+        'America/Denver',
+        'America/Los_Angeles',
+        'America/Phoenix',
+        'Europe/London',
+        'Europe/Paris',
+        'Europe/Berlin',
+        'Asia/Tokyo',
+        'Asia/Shanghai',
+        'Asia/Kolkata',
+        'Australia/Sydney',
+        'UTC'
+      ];
+      
+      const { useCommon } = await prompts({
+        type: 'confirm',
+        name: 'useCommon',
+        message: 'Would you like to choose from common timezones?',
+        initial: true
+      });
+      
+      let newTimezone;
+      
+      if (useCommon) {
+        const { selectedTimezone } = await prompts({
+          type: 'select',
+          name: 'selectedTimezone',
+          message: 'Choose your timezone:',
+          choices: commonTimezones.map(tz => ({
+            title: `${tz} (${new Date().toLocaleString('en-US', { timeZone: tz, timeZoneName: 'short' })})`,
+            value: tz
+          })),
+          initial: commonTimezones.indexOf(currentTimezone) >= 0 ? commonTimezones.indexOf(currentTimezone) : 0
+        });
+        newTimezone = selectedTimezone;
+      } else {
+        const { customTimezone } = await prompts({
+          type: 'text',
+          name: 'customTimezone',
+          message: 'Enter timezone (e.g., America/New_York, Europe/London):',
+          initial: currentTimezone,
+          validate: value => {
+            try {
+              new Intl.DateTimeFormat('en-US', { timeZone: value });
+              return true;
+            } catch {
+              return 'Invalid timezone. Use format like America/New_York or Europe/London';
+            }
+          }
+        });
+        newTimezone = customTimezone;
+      }
+      
+      if (!newTimezone) {
+        console.log('Setup cancelled.');
+        return;
+      }
+      
+      try {
+        setTimezone(newTimezone);
+        console.log(`✅ Timezone set to: ${newTimezone}`);
+        
+        const now = new Date();
+        const localTime = now.toLocaleString('en-US', { timeZone: newTimezone });
+        console.log(`🕐 Current time in ${newTimezone}: ${localTime}`);
+        
+        console.log('\n💡 This affects how "today\'s" data is calculated for meals, exercises, and summaries.');
+      } catch (error) {
+        console.error(`❌ Error setting timezone: ${error.message}`);
+        process.exit(1);
       }
       return;
     }
@@ -573,7 +657,93 @@ program
         }
       }
       
-      console.log('\n🎉 Setup complete! You can now use automatic calorie estimation.');
+      // Now prompt for timezone configuration (for both new and existing users)
+      console.log('\n🌍 Timezone Configuration\n');
+      
+      const currentTimezone = getTimezone();
+      console.log(`Current timezone: ${currentTimezone}`);
+      
+      const { configureTimezone } = await prompts({
+        type: 'confirm',
+        name: 'configureTimezone',
+        message: 'Would you like to configure your timezone preference?',
+        initial: true
+      });
+      
+      if (configureTimezone) {
+        // Get common timezones
+        const commonTimezones = [
+          'America/New_York',
+          'America/Chicago',
+          'America/Denver',
+          'America/Los_Angeles',
+          'America/Phoenix',
+          'Europe/London',
+          'Europe/Paris',
+          'Europe/Berlin',
+          'Asia/Tokyo',
+          'Asia/Shanghai',
+          'Asia/Kolkata',
+          'Australia/Sydney',
+          'UTC'
+        ];
+        
+        const { useCommon } = await prompts({
+          type: 'confirm',
+          name: 'useCommon',
+          message: 'Would you like to choose from common timezones?',
+          initial: true
+        });
+        
+        let newTimezone;
+        
+        if (useCommon) {
+          const { selectedTimezone } = await prompts({
+            type: 'select',
+            name: 'selectedTimezone',
+            message: 'Choose your timezone:',
+            choices: commonTimezones.map(tz => ({
+              title: `${tz} (${new Date().toLocaleString('en-US', { timeZone: tz, timeZoneName: 'short' })})`,
+              value: tz
+            })),
+            initial: commonTimezones.indexOf(currentTimezone) >= 0 ? commonTimezones.indexOf(currentTimezone) : 0
+          });
+          newTimezone = selectedTimezone;
+        } else {
+          const { customTimezone } = await prompts({
+            type: 'text',
+            name: 'customTimezone',
+            message: 'Enter timezone (e.g., America/New_York, Europe/London):',
+            initial: currentTimezone,
+            validate: value => {
+              try {
+                new Intl.DateTimeFormat('en-US', { timeZone: value });
+                return true;
+              } catch {
+                return 'Invalid timezone. Use format like America/New_York or Europe/London';
+              }
+            }
+          });
+          newTimezone = customTimezone;
+        }
+        
+        if (newTimezone) {
+          try {
+            setTimezone(newTimezone);
+            console.log(`✅ Timezone set to: ${newTimezone}`);
+            
+            const now = new Date();
+            const localTime = now.toLocaleString('en-US', { timeZone: newTimezone });
+            console.log(`🕐 Current time in ${newTimezone}: ${localTime}`);
+            
+            console.log('\n💡 This affects how "today\'s" data is calculated for meals, exercises, and summaries.');
+          } catch (error) {
+            console.error(`❌ Error setting timezone: ${error.message}`);
+          }
+        }
+      }
+      
+      console.log('\n� Setup complete! You can now use automatic calorie estimation.');
       console.log('\nTry it out:');
       const finalSystem = getUnitSystem();
       if (finalSystem === 'imperial') {
@@ -591,6 +761,7 @@ program
       console.log(`\n📊 Current storage mode: ${currentMode}`);
       console.log('\nTo configure other settings:');
       console.log('  fasting setup --units     # Configure unit system (imperial/metric)');
+      console.log('  fasting setup --timezone  # Configure timezone');
       console.log('  fasting setup --local     # Use local files');
       console.log('  fasting setup --supabase  # Use Supabase cloud storage');
     }
