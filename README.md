@@ -10,7 +10,7 @@ A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal t
 - **🤖 AI-powered personalized recommendations** - Get meal, exercise, and drink suggestions based on your activity level, medical conditions, fasting status, and preferences
 - **👤 User profile management** - Set activity level (sedentary/moderate/active) and medical conditions for personalized recommendations
 - **📏 Imperial/Metric unit system support** - Comprehensive support for both measurement systems with automatic conversion
-- **Automatic calorie estimation** using OpenAI's GPT-4o model for food and exercise with personalized prompts
+- **Automatic calorie estimation** using OpenAI's GPT-4o model for food and exercise with personalized prompts and visual progress indicators
 - **Weight monitoring** - Log and visualize weight trends with ASCII charts in your preferred units
 - **Calorie tracking** - Daily calorie intake and burn visualization with line charts
 - **Cloud storage** - Optional Supabase integration for cloud data storage and sync
@@ -18,6 +18,7 @@ A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal t
 - **Comprehensive summary** - All-in-one dashboard with current status and history
 - **Flexible timing** - Specify custom start/end times for fasts and meals
 - **Smart unit parsing** - Supports various unit formats (kg, lbs, ml, fl oz, cups, hours, minutes)
+- **Visual progress indicators** - Animated spinners show progress during AI API calls
 - Manual calorie override when needed
 
 ## Setup (usage)
@@ -666,7 +667,7 @@ pnpm test:exercise       # Exercise tracking tests
 - **User Profile Tests**: Activity level validation, medical condition management, profile integration
 
 **Test Statistics:**
-- **11 test files** with **80+ total tests**
+- **12 test files** with **85+ total tests**
 - **100% pass rate** with comprehensive error handling validation
 - **Isolated testing environment** - Uses temporary directories to avoid interfering with real user data
 - **Integration testing** - Validates system consistency and cross-module functionality

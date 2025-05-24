@@ -6,6 +6,7 @@ import { logMeal, logDrink, getTodaysEntries, getCalorieHistory, getWeightHistor
 import { logWeight } from '../lib/weight.js';
 import { estimateCalories } from '../lib/calorie-estimator.js';
 import { estimateExerciseCalories } from '../lib/exercise-estimator.js';
+import { withSpinner } from '../lib/spinner.js';
 import { setOpenAIKey, getOpenAIKey, getConfigPath, cleanData, getConfigDir, setSupabaseConfig, getSupabaseConfig, setStorageMode, getStorageMode, isSupabaseConfigured, getWeightUnit, setWeightUnit, getUnitSystem, setUnitSystem, getTimezone, setTimezone, getActivityLevel, setActivityLevel, getMedicalConditions, addMedicalCondition, removeMedicalCondition, setMedicalConditions } from '../lib/config.js';
 import { getSizeExamples } from '../lib/units.js';
 import { createWeightChart, createFastChart, createCalorieChart, createExerciseChart, createSummaryTable } from '../lib/charts.js';
@@ -28,10 +29,12 @@ program
       console.log(`Using manual calorie count: ${finalCalories}`);
     } else {
       const sizeText = size ? ` (${size})` : '';
-      console.log(`Estimating calories for: ${description}${sizeText}...`);
       try {
-        finalCalories = await estimateCalories(description, 'meal', size);
-        console.log(`Estimated calories: ${finalCalories}`);
+        finalCalories = await withSpinner(
+          `Estimating calories for: ${description}${sizeText}`,
+          () => estimateCalories(description, 'meal', size)
+        );
+        console.log(`✅ Estimated calories: ${finalCalories}`);
       } catch (error) {
         console.error(`❌ ${error.message}`);
         const unitSystem = getUnitSystem();
@@ -59,10 +62,12 @@ program
       console.log(`Using manual calorie count: ${finalCalories}`);
     } else {
       const sizeText = size ? ` (${size})` : '';
-      console.log(`Estimating calories for: ${description}${sizeText}...`);
       try {
-        finalCalories = await estimateCalories(description, 'drink', size);
-        console.log(`Estimated calories: ${finalCalories}`);
+        finalCalories = await withSpinner(
+          `Estimating calories for: ${description}${sizeText}`,
+          () => estimateCalories(description, 'drink', size)
+        );
+        console.log(`✅ Estimated calories: ${finalCalories}`);
       } catch (error) {
         console.error(`❌ ${error.message}`);
         const unitSystem = getUnitSystem();
@@ -141,10 +146,12 @@ program
       finalCalories = Number(calories);
       console.log(`Using manual calorie burn count: ${finalCalories}`);
     } else {
-      console.log(`Estimating calories burned for: ${description} (${durationInMinutes} minutes)...`);
       try {
-        finalCalories = await estimateExerciseCalories(description, durationInMinutes);
-        console.log(`Estimated calories burned: ${finalCalories}`);
+        finalCalories = await withSpinner(
+          `Estimating calories burned for: ${description} (${durationInMinutes} minutes)`,
+          () => estimateExerciseCalories(description, durationInMinutes)
+        );
+        console.log(`✅ Estimated calories burned: ${finalCalories}`);
       } catch (error) {
         console.error(`❌ Error estimating calories: ${error.message}`);
         console.log('Using fallback estimate...');
@@ -180,31 +187,31 @@ program
       let recommendations, formattedOutput;
       
       if (recommendationType === 'meal') {
-        console.log('🤖 Generating personalized meal recommendations...\n');
-        
         const options = {};
         if (type) options.mealType = type;
         if (calories) options.calorieTarget = Number(calories);
         if (dietary) options.dietaryRestrictions = dietary;
         
-        recommendations = await generateMealRecommendations(preference || '', options);
+        recommendations = await withSpinner(
+          '🤖 Generating personalized meal recommendations',
+          () => generateMealRecommendations(preference || '', options)
+        );
         formattedOutput = formatRecommendations(recommendations);
         
       } else if (recommendationType === 'drink') {
-        console.log('🤖 Generating personalized drink recommendations...\n');
-        
         const options = {};
         if (type) options.drinkType = type;
         if (calories) options.calorieTarget = Number(calories);
         if (dietary) options.dietaryRestrictions = dietary;
         if (purpose) options.purpose = purpose;
         
-        recommendations = await generateDrinkRecommendations(preference || '', options);
+        recommendations = await withSpinner(
+          '🤖 Generating personalized drink recommendations',
+          () => generateDrinkRecommendations(preference || '', options)
+        );
         formattedOutput = formatDrinkRecommendations(recommendations);
         
       } else if (recommendationType === 'exercise') {
-        console.log('🤖 Generating personalized exercise recommendations...\n');
-        
         const options = {};
         if (type) options.exerciseType = type;
         if (calories) options.duration = Number(calories); // calories option repurposed as duration for exercises
@@ -212,7 +219,10 @@ program
         if (equipment) options.equipment = equipment;
         if (location) options.location = location;
         
-        recommendations = await generateExerciseRecommendations(preference || '', options);
+        recommendations = await withSpinner(
+          '🤖 Generating personalized exercise recommendations',
+          () => generateExerciseRecommendations(preference || '', options)
+        );
         formattedOutput = formatExerciseRecommendations(recommendations);
       }
       

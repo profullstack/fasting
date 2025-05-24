@@ -19,7 +19,8 @@ const testFiles = [
   'meal-recommender.test.js',
   'exercise-recommender.test.js',
   'drink-recommender.test.js',
-  'activity-conditions.test.js'
+  'activity-conditions.test.js',
+  'spinner.test.js'
 ];
 
 console.log('🧪 Running Fasting App Tests\n');
