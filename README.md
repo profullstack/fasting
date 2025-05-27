@@ -634,8 +634,11 @@ Note: When using the module API, you need to provide calorie counts manually for
 The project includes comprehensive unit tests for all functionality:
 
 ```bash
-# Run all tests
+# Run all tests (core tests only, faster)
 pnpm test
+
+# Run all tests including AI tests (requires OpenAI API key, slower)
+pnpm test:ai
 
 # Run specific test suites
 pnpm test:fast           # Fast tracking tests
@@ -648,26 +651,32 @@ pnpm test:exercise       # Exercise tracking tests
 
 ### Test Coverage
 
-**Core Functionality:**
+**Core Tests (Fast, No API Required):**
 - **Fast Tracking**: Start/end fasts, duration calculation, history management
 - **Charts**: Weight line charts, fast bar charts, summary tables
 - **Meal/Drink Logging**: Entry creation, today's entries filtering
 - **Weight Tracking**: Weight logging, history retrieval, trend analysis
 - **Calorie Charts**: Daily calorie aggregation, chart generation, history tracking
 - **Exercise Tracking**: Exercise logging, calorie burn estimation, daily aggregation, chart generation
-
-**NEW: Enhanced Test Coverage:**
 - **Unit System Tests**: Imperial/metric unit parsing, conversion, and configuration
 - **Duration Parsing**: Flexible duration format handling (minutes, hours, mixed formats)
-- **Meal Recommendations**: AI response formatting, JSON parsing, fallback handling
-- **Exercise Recommendations**: Exercise suggestion formatting, intensity handling, equipment filtering
-- **Drink Recommendations**: Beverage suggestion formatting, purpose-based filtering
 - **Unit Conversion**: Volume and weight conversions between imperial and metric
 - **Configuration Management**: Unit system preferences, backward compatibility
 - **User Profile Tests**: Activity level validation, medical condition management, profile integration
 
+**AI Tests (Slower, Requires OpenAI API Key):**
+- **Meal Recommendations**: AI response formatting, JSON parsing, fallback handling
+- **Exercise Recommendations**: Exercise suggestion formatting, intensity handling, equipment filtering
+- **Drink Recommendations**: Beverage suggestion formatting, purpose-based filtering
+
+**Test Organization:**
+- **Core tests** run by default with `pnpm test` (11 test files, ~66 tests)
+- **AI tests** only run with `pnpm test:ai` flag (14 test files, ~69 tests)
+- **Separation rationale**: AI tests require OpenAI API key and take longer to run
+- **CI/CD friendly**: Core tests can run in environments without API keys
+
 **Test Statistics:**
-- **12 test files** with **85+ total tests**
+- **14 total test files** with **69+ total tests**
 - **100% pass rate** with comprehensive error handling validation
 - **Isolated testing environment** - Uses temporary directories to avoid interfering with real user data
 - **Integration testing** - Validates system consistency and cross-module functionality

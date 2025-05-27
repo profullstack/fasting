@@ -23,6 +23,7 @@
   },
   "scripts": {
     "test": "node tests/run-tests.js",
+    "test:ai": "node tests/run-tests.js --test-ai",
     "test:fast": "node --test tests/fast.test.js",
     "test:charts": "node --test tests/charts.test.js",
     "test:fasting": "node --test tests/fasting.test.js",

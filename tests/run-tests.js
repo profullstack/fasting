@@ -6,7 +6,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const testFiles = [
+// Core tests that don't require OpenAI API
+const coreTestFiles = [
   'fast.test.js',
   'charts.test.js',
   'fasting.test.js',
@@ -16,14 +17,31 @@ const testFiles = [
   'units.test.js',
   'config-units.test.js',
   'exercise-duration.test.js',
-  'meal-recommender.test.js',
-  'exercise-recommender.test.js',
-  'drink-recommender.test.js',
   'activity-conditions.test.js',
   'spinner.test.js'
 ];
 
+// AI-related tests that require OpenAI API key and take longer
+const aiTestFiles = [
+  'meal-recommender.test.js',
+  'exercise-recommender.test.js',
+  'drink-recommender.test.js'
+];
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+const includeAiTests = args.includes('--test-ai');
+
+// Determine which tests to run
+const testFiles = includeAiTests ? [...coreTestFiles, ...aiTestFiles] : coreTestFiles;
+
 console.log('🧪 Running Fasting App Tests\n');
+
+if (includeAiTests) {
+  console.log('🤖 Including AI tests (requires OpenAI API key)\n');
+} else {
+  console.log('⚡ Running core tests only (use --test-ai to include AI tests)\n');
+}
 
 let totalTests = 0;
 let passedTests = 0;
