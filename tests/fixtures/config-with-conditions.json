@@ -1,0 +1,11 @@
+{
+  "unitSystem": "imperial",
+  "weightUnit": "lbs",
+  "timezone": "America/Los_Angeles",
+  "activityLevel": "sedentary",
+  "medicalConditions": [
+    "diabetes",
+    "high blood pressure",
+    "heart disease"
+  ]
+}

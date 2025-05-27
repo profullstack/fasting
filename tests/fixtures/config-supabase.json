@@ -1,0 +1,10 @@
+{
+  "unitSystem": "metric",
+  "weightUnit": "kg",
+  "timezone": "UTC",
+  "activityLevel": "moderate",
+  "storageMode": "supabase",
+  "supabaseUrl": "https://test.supabase.co",
+  "supabaseServiceRoleKey": "test-service-role-key",
+  "openaiApiKey": "sk-test-key"
+}

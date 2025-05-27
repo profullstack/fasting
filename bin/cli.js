@@ -2,6 +2,9 @@
 
 import { Command } from 'commander';
 import prompts from 'prompts';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { logMeal, logDrink, getTodaysEntries, getCalorieHistory, getWeightHistory, startFast, endFast, getCurrentFast, getFastHistory, getFastStats, logExercise, getTodaysExercises, getExerciseHistory } from '../lib/index.js';
 import { logWeight } from '../lib/weight.js';
 import { estimateCalories } from '../lib/calorie-estimator.js';
@@ -15,7 +18,17 @@ import { generateMealRecommendations, formatRecommendations } from '../lib/meal-
 import { generateExerciseRecommendations, formatExerciseRecommendations } from '../lib/exercise-recommender.js';
 import { generateDrinkRecommendations, formatDrinkRecommendations } from '../lib/drink-recommender.js';
 
+// Get package version
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
+
 const program = new Command();
+
+// Set up program name, description, and version
+program
+  .name('fasting')
+  .description('A comprehensive CLI for 16:8 intermittent fasting with meal tracking, weight monitoring, and AI-powered recommendations')
+  .version(packageJson.version, '-v, --version', 'Display version number');
 
 program
   .command('meal <description>')

@@ -18,7 +18,9 @@ const coreTestFiles = [
   'config-units.test.js',
   'exercise-duration.test.js',
   'activity-conditions.test.js',
-  'spinner.test.js'
+  'config.test.js',
+  'spinner.test.js',
+  'cli.test.js'
 ];
 
 // AI-related tests that require OpenAI API key and take longer
