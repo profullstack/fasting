@@ -1,5 +1,7 @@
 # Fasting App
 
+[![Crypto Payment](https://paybadge.profullstack.com/badge.svg)](https://paybadge.profullstack.com/?tickers=btc%2Ceth%2Csol%2Cusdc)
+
 A comprehensive CLI and Node.js module for 16:8 intermittent fasting with meal tracking, weight monitoring, fast history, and AI-powered personalized recommendations with visual charts.
 
 ## Features
